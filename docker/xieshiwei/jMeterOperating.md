@@ -4,6 +4,7 @@
 # 2. Start jMeter
   * The command to start jMeter is: java -jar ApacheJMeter.jar
   * A graphical interface will appear after successful launch of jMeter
+   ![111](AE25AF23E93C42C9A43BF8966233F3B5) 
   
 # 3. New test plan
   * Steps:Click file-->new 
@@ -16,6 +17,7 @@
     * Ramp-Up Period: Equivalent to the time range of the first loop used by the thread (for example: 1 second)
     * Loop count: the number of virtual times (for example: 10 times)
   * The meaning it expresses is: 1 person requests 10 times in one second, 10 people request 100 times in 1 second.
+    ![cishu](E4461B1321B7451389C11C6A6C02CDC3)
   
 # 5. Create an Http Request
   * Steps:Right click Add-->Sampler-->Http Request
@@ -24,11 +26,14 @@
     * Parameters refers to the parameters in the function definition, and argument refers to the actual parameters when the function is called. In general, the two can be mixed.
     * Files Upload refers to: Get all the embedded resources from the HTML file: When selected, send the HTTP request and get the response of the HTML file content, then parse the HTML and get all the resources contained in the HTML (picture, flash Etc): (not selected by default)
     * Body Data refers to the entity data, which is the content of the subject entity in the request message. Generally, we send the request to the server, and the entity body parameters carried can be written here. In general, Body Data is used.
+    * Body Data used in my test, request getNeighbors entity content is {"command": "getNeighbors"}, request getNodeInfo entity content is {"command": "getNodeInfo"}......
+    ![request](59410F422C3D4BE2AF27BAD8B0A2AC76)
 
 # 6. Create an HTTP Header Manager
   * Steps:Right click Add-->Config Element-->Http Header Manager
   * The role of the header manager is:The content of the request header used to customize the HTTP request issued by Sampler. HTTP requests from different browsers have different Agents. The correct Refer is required to access certain pages with anti-theft chains... In these cases, the HTTP Header Manager is required to ensure that the HTTP request sent is correct.
   * Then you need to fill in the name of the information header and the corresponding value. I filled in the Content-Type when I tested it. The meaning can be understood as the parameter name and type. Enter the corresponding parameter type below the value. Here I need to transfer the json type when testing. So fill in the application/json
+    ![hander](89C088BF3C0C49A297883F01651660C8)
 
 # 7. Create an Summary Report
   * Steps:Right click Add-->listener-->summary Report
@@ -45,10 +50,13 @@
     * Throughput: throughput rate (TPS).
     * KB/sec: Packet traffic per second in KB.
     * Avg.Bytes: Average data traffic in Bytes
+    * Here is a set of data that I did test monitoring:
+      ![summ](307F4191887C4170B5A3423FE2FE2446)
 
 # 8. Create an View Results Tree
   * Steps:Right click Add-->listener-->view Results Tree
   * It contains three pieces: sampler results, request and response data.
   * After the test is over, if our request is successfully sent to the server, the simulation request in the result tree will be displayed in green. It can be judged by the response status code information in the sampler result or by clicking the request module to view the request we sent. If the request fails, the simulation request will be displayed in red and feedback error.
+    ![tree](36B94B47247E44EEB5FAC0A336912E11)
     
   
