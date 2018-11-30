@@ -4,7 +4,7 @@ import commands
 import json
 from flask import Flask, request
 from iota_cache import IotaCache
-from tag_helper import TagHelper
+from tag_generator import TagGenerator
 
 
 app = Flask(__name__)
@@ -39,9 +39,9 @@ def put_file():
 
     print("[INFO]Cache json %s in ipfs, the hash is %s." % (json.dumps(req_json, sort_keys=True), ipfs_hash))
 
-    cache.cache_txn_in_tangle(ipfs_hash, TagHelper.get_current_tag())
+    cache.cache_txn_in_tangle(ipfs_hash, TagGenerator.get_current_tag())
 
-    print("[INFO]Cache hash %s in tangle, the tangle tag is %s." % (ipfs_hash, TagHelper.get_current_tag()))
+    print("[INFO]Cache hash %s in tangle, the tangle tag is %s." % (ipfs_hash, TagGenerator.get_current_tag()))
 
     return 'ok'
 
