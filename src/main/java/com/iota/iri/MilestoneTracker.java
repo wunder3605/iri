@@ -117,6 +117,7 @@ public class MilestoneTracker {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
             }
             log.info("Tracker started.");
