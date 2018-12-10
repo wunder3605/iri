@@ -37,6 +37,7 @@ class ReplicatorSinkProcessor implements Runnable {
     		Thread.sleep(1000);
     	}
     	catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
     		log.info("Interrupted");
     	}
 
@@ -114,6 +115,7 @@ class ReplicatorSinkProcessor implements Runnable {
                                 }
                             }
                         } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
                             log.error("Interrupted while waiting for send buffer");
                         }                        
                     }
