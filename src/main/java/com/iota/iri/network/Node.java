@@ -450,7 +450,7 @@ public class Node {
         return tip == null ? Hash.NULL_HASH : tip;
     }
 
-    public void sendPacket(final DatagramPacket sendingPacket, TransactionViewModel transactionViewModel, Neighbor neighbor) throws Exception {
+    public void sendPacket(DatagramPacket sendingPacket, TransactionViewModel transactionViewModel, Neighbor neighbor) throws Exception {
 
         //limit amount of sends per second
         long now = System.currentTimeMillis();

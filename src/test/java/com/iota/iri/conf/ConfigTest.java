@@ -113,8 +113,7 @@ public class ConfigTest {
         String[] args = {"--remote"};
         IotaConfig iotaConfig = ConfigFactory.createIotaConfig(false);
         iotaConfig.parseConfigFromArgs(args);
-        Assert.assertFalse("remote is null",false);
-//        Assert.assertEquals("The api interface should be open to the public", "0.0.0.0", iotaConfig.getApiHost());
+        Assert.assertEquals("The api interface should be open to the public", "0.0.0.0", iotaConfig.getApiHost());
     }
 
     @Test

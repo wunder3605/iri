@@ -45,7 +45,6 @@ public class ReplicatorSinkPool  implements Runnable {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
                     log.error("Interrupted");
                 }
             }
@@ -59,7 +58,6 @@ public class ReplicatorSinkPool  implements Runnable {
             try {
                 Thread.sleep(30000);
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
                 log.debug("Interrupted: ", e);
             }
             List<Neighbor> neighbors = node.getNeighbors();
