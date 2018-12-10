@@ -85,6 +85,7 @@ public class IXI {
             try {
                 key = watcher.poll(1000, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 log.error("Watcher interrupted: ", e);
             }
             if (key == null) {
