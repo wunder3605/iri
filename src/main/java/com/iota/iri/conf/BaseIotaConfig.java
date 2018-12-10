@@ -77,6 +77,7 @@ public abstract class BaseIotaConfig implements IotaConfig {
     protected int maxDepth = Defaults.MAX_DEPTH;
     protected double alpha = Defaults.ALPHA;
     private int maxAnalyzedTransactions = Defaults.MAX_ANALYZED_TXS;
+    private String weightCalAlgo = Defaults.WEIGHT_CAL_ALGO;
 
     //PearlDiver
     protected int powThreads = Defaults.POW_THREADS;
@@ -89,6 +90,24 @@ public abstract class BaseIotaConfig implements IotaConfig {
     protected int localSnapshotsIntervalUnsynced = Defaults.LOCAL_SNAPSHOTS_INTERVAL_UNSYNCED;
     protected int localSnapshotsDepth = Defaults.LOCAL_SNAPSHOTS_DEPTH;
     protected String localSnapshotsBasePath = Defaults.LOCAL_SNAPSHOTS_BASE_PATH;
+
+    private static BaseIotaConfig config;
+
+    // TODO make this thread safe
+    public static void setInstance(BaseIotaConfig cfg) 
+    {
+        if (config == null)
+        {
+            config = cfg;
+        }
+    }
+    public static BaseIotaConfig getInstance() {
+        if(config == null)
+        {
+            config = new TestnetConfig();
+        }
+        return config; 
+    }
 
     public BaseIotaConfig() {
         //empty constructor
@@ -675,11 +694,22 @@ public abstract class BaseIotaConfig implements IotaConfig {
     public int getBelowMaxDepthTransactionLimit() {
         return maxAnalyzedTransactions;
     }
-
+    
     @JsonProperty
     @Parameter(names = "--max-analyzed-transactions", description = TipSelConfig.Descriptions.BELOW_MAX_DEPTH_TRANSACTION_LIMIT)
     protected void setBelowMaxDepthTransactionLimit(int maxAnalyzedTransactions) {
         this.maxAnalyzedTransactions = maxAnalyzedTransactions;
+    }
+
+    @Override
+    public String getWeightCalAlgo() {
+        return weightCalAlgo;
+    }
+
+    @JsonProperty
+    @Parameter(names = "--weight-calculation-algorithm", description = TipSelConfig.Descriptions.WEIGHT_CAL_ALGO)
+    protected void setWeightCalAlgo(String weightCalAlgo) {
+        this.weightCalAlgo = weightCalAlgo;
     }
 
     @Override
@@ -748,6 +778,7 @@ public abstract class BaseIotaConfig implements IotaConfig {
         //TipSel
         int MAX_DEPTH = 15;
         double ALPHA = 0.001d;
+        String WEIGHT_CAL_ALGO = "CUM_WEIGHT";
 
         //PearlDiver
         int POW_THREADS = 0;
