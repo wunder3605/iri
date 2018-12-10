@@ -42,7 +42,7 @@ public class ThreadUtils {
      * @param threadIdentifier identifier object that is used to associate the {@link Thread} and synchronize the access
      * @return the thread that got spawned by this method
      */
-    public static Thread spawnThread(Runnable runnable, ThreadIdentifier threadIdentifier) {
+    public static Thread spawnThread(Runnable runnable, final ThreadIdentifier threadIdentifier) {
         if (threads.get(threadIdentifier) == null || threads.get(threadIdentifier).isInterrupted()) {
             synchronized(threadIdentifier) {
                 if (threads.get(threadIdentifier) == null || threads.get(threadIdentifier).isInterrupted()) {
@@ -96,7 +96,7 @@ public class ThreadUtils {
      * @return the {@link Thread} that will be terminated or null if there was no {@link Thread} associated to the given
      *         identifier
      */
-    public static Thread stopThread(ThreadIdentifier threadIdentifier) {
+    public static Thread stopThread(final ThreadIdentifier threadIdentifier) {
         if (threads.get(threadIdentifier) != null && !threads.get(threadIdentifier).isInterrupted()) {
             synchronized(threadIdentifier) {
                 if (threads.get(threadIdentifier) != null && !threads.get(threadIdentifier).isInterrupted()) {
