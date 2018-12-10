@@ -139,12 +139,12 @@ public class CumulativeWeightCalculator implements RatingCalculator{
     }
 
     private static <T extends HashId> UnIterableMap<HashId, Integer> updateCw(
-            UnIterableMap<HashId, Set<T>> txHashToApprovers, UnIterableMap<HashId, Integer> txHashToCumulativeWeight ,
+            UnIterableMap<HashId, Set<T>> txHashToApprovers, UnIterableMap<HashId, Integer> txToCumulativeWeight,
             Hash txHash) {
         Set<T> approvers = txHashToApprovers.get(txHash);
         int weight = CollectionUtils.emptyIfNull(approvers).size() + 1;
-        txHashToCumulativeWeight .put(txHash, weight);
-        return txHashToCumulativeWeight ;
+        txToCumulativeWeight.put(txHash, weight);
+        return txToCumulativeWeight;
     }
 
     private static UnIterableMap<HashId, Set<HashId>> createTxHashToApproversPrefixMap() {
