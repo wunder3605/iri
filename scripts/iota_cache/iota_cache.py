@@ -1,7 +1,7 @@
 import time
-from iota import Iota, Address, ProposedTransaction, Tag, Transaction, TryteString, TransactionTrytes, ProposedBundle, Nonce, BundleHash,TransactionHash
+from iota import Iota, Address, ProposedTransaction, Tag, Transaction, TryteString, TransactionTrytes, ProposedBundle, BundleHash, Nonce, Fragment
 from six import binary_type, moves as compat, text_type
-
+import api
 
 class IotaCache(object):
 
@@ -40,10 +40,14 @@ class IotaCache(object):
         address = "JVSVAFSXWHUIZPFDLORNDMASGNXWFGZFMXGLCJQGFWFEZWWOA9KYSPHCLZHFBCOHMNCCBAGNACPIGHVYX"
         txns = self.api.get_transactions_to_approve(1)
         tr = self.api.get_trytes([txns[u'branchTransaction']])
+
         txn = Transaction.from_tryte_string(tr[u'trytes'][0], txns[u'branchTransaction'])
         txn.trunk_transaction_hash = txns[u'trunkTransaction']
         txn.branch_transaction_hash = txns[u'branchTransaction']
+        txn.tag = Tag(TryteString.from_string(tag))
+        txn.signature_message_fragment = Fragment(TryteString.from_string(ipfs_addr));
         attach_trytes = api.attachToTangle(self.uri, txns[u'trunkTransaction'].__str__(), txns[u'branchTransaction'].__str__(), 1, txn.as_tryte_string().__str__())
+
         res = self.api.broadcast_and_store(attach_trytes[u'trytes'])
         return res
 
