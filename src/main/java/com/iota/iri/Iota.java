@@ -6,6 +6,8 @@ import com.iota.iri.conf.TipSelConfig;
 import com.iota.iri.controllers.TipsViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.hash.SpongeFactory;
+import com.iota.iri.model.StateDiff;
+import com.iota.iri.model.persistables.*;
 import com.iota.iri.network.Node;
 import com.iota.iri.network.TransactionRequester;
 import com.iota.iri.network.UDPReceiver;
@@ -29,10 +31,16 @@ import com.iota.iri.storage.Persistable;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.ZmqPublishProvider;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
+import com.iota.iri.utils.IotaUtils;
 import com.iota.iri.utils.Pair;
 import com.iota.iri.zmq.MessageQ;
 import com.iota.iri.storage.localinmemorygraph.LocalInMemoryGraphProvider;
 import com.iota.iri.storage.neo4j.Neo4jPersistenceProvider;
+
+import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
@@ -41,8 +49,7 @@ import com.iota.iri.validator.*;
 import com.iota.iri.validator.impl.*;
 
 import java.io.IOException;
-import java.security.SecureRandom;
-import java.util.List;
+
 
 /**
  * Created by paul on 5/19/17.
@@ -147,7 +154,19 @@ public class Iota {
                 tangle.addPersistenceProvider(new RocksDBPersistenceProvider(
                         configuration.getDbPath(),
                         configuration.getDbLogPath(),
-                        configuration.getDbCacheSize()));
+                        configuration.getDbCacheSize(),
+                        new HashMap<String, Class<? extends  Persistable>>() {{
+                            put("transaction", Transaction.class);
+                            put("milestone", Milestone.class);
+                            put("stateDiff", StateDiff.class);
+                            put("address", Address.class);
+                            put("approvee", Approvee.class);
+                            put("bundle", Bundle.class);
+                            put("obsoleteTag", ObsoleteTag.class);
+                            put("tag", Tag.class);
+                        }},
+                        new Pair<>("transaction-metadata", Transaction.class))
+                );
                 break;
             }
             default: {
