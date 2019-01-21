@@ -1,5 +1,6 @@
 package com.iota.iri.network;
 
+import com.iota.iri.conf.BaseIotaConfig;
 import com.iota.iri.validator.MilestoneTracker;
 import com.iota.iri.validator.TransactionValidator;
 import com.iota.iri.conf.NodeConfig;
@@ -360,6 +361,12 @@ public class Node {
     public void processReceivedData(TransactionViewModel receivedTransactionViewModel, Neighbor neighbor) {
 
         boolean stored = false;
+
+        if (BaseIotaConfig.getInstance().isEnableBatchTxns()) {
+            long count = receivedTransactionViewModel.addBatchTxnCount(tangle);
+
+            log.info("received batch of {} transactions from network.", count);
+        }
 
         //store new transaction
         try {

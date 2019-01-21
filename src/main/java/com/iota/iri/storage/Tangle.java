@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.List;
 import java.util.Set;
 
@@ -16,6 +17,16 @@ import java.util.Set;
  */
 public class Tangle {
     private static final Logger log = LoggerFactory.getLogger(Tangle.class);
+
+    private static AtomicLong txnCount = new AtomicLong(0);;
+
+    public void addBatchCount(long count) {
+        txnCount.addAndGet(count);
+    }
+
+    public long getBatchCount() {
+        return txnCount.get();
+    }
 
     private final List<PersistenceProvider> persistenceProviders = new ArrayList<>();
 
@@ -161,6 +172,9 @@ public class Tangle {
                     break;
                 }
             }
+
+            value += getBatchCount();
+
             return value;
     }
 
