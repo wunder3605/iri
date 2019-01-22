@@ -442,8 +442,8 @@ public class TransactionViewModelTest {
         byte[] trits = getRandomTransactionTrits();
         TransactionViewModel transactionViewModel = new TransactionViewModel(trits, TransactionHash.calculate(SpongeFactory.Mode.CURLP81, trits));
 
-        long count = tangle.getBatchCount();
+        long count = tangle.getTxnCount();
         transactionViewModel.addBatchTxnCount(tangle);
-        Assert.assertEquals("batch txs count should be the same", tangle.getBatchCount(), count);
+        Assert.assertEquals("batch txs count should be increased 1.", tangle.getTxnCount(), count + 1);
     }
 }

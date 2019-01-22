@@ -362,12 +362,6 @@ public class Node {
 
         boolean stored = false;
 
-        if (BaseIotaConfig.getInstance().isEnableBatchTxns()) {
-            long count = receivedTransactionViewModel.addBatchTxnCount(tangle);
-
-            log.info("received batch of {} transactions from network.", count);
-        }
-
         //store new transaction
         try {
             stored = receivedTransactionViewModel.store(tangle);
@@ -378,6 +372,13 @@ public class Node {
 
         //if new, then broadcast to all neighbors
         if (stored) {
+            // add batch of txns count.
+            if (BaseIotaConfig.getInstance().isEnableBatchTxns()) {
+                long count = receivedTransactionViewModel.addBatchTxnCount(tangle);
+
+                log.info("received batch of {} transactions from network.", count);
+            }
+
             receivedTransactionViewModel.setArrivalTime(System.currentTimeMillis());
             try {
                 transactionValidator.updateStatus(receivedTransactionViewModel);

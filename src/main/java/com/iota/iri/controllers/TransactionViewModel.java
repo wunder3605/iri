@@ -525,17 +525,18 @@ public class TransactionViewModel {
         String trytesSig = Converter.trytes(tritsSig);
         String asciiSig = Converter.trytesToAscii(trytesSig);
 
+        long txnCount;
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode rootNode = objectMapper.readTree(asciiSig);
             JsonNode idNode = rootNode.path("tx_num");
-            long txnCount = idNode.asLong();
-
-            tangle.addBatchCount(txnCount - 1);
-
-            return txnCount;
+            txnCount = idNode.asLong();
         } catch (Exception _e) {
-            return 1;
+            txnCount = 1;
         }
+
+        tangle.addTxnCount(txnCount);
+
+        return txnCount;
     }
 }

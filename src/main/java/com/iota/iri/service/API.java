@@ -690,13 +690,14 @@ public class API {
             final TransactionViewModel transactionViewModel = instance.transactionValidator.validateTrits(txTrits,
                     instance.transactionValidator.getMinWeightMagnitude());
 
-            if (BaseIotaConfig.getInstance().isEnableBatchTxns()) {
-                long count = transactionViewModel.addBatchTxnCount(instance.tangle);
-
-                log.info("received batch of {} transactions from api.", count);
-            }
-
             if(transactionViewModel.store(instance.tangle)) {
+                // add batch of txns count.
+                if (BaseIotaConfig.getInstance().isEnableBatchTxns()) {
+                    long count = transactionViewModel.addBatchTxnCount(instance.tangle);
+
+                    log.info("received batch of {} transactions from api.", count);
+                }
+
                 transactionViewModel.setArrivalTime(System.currentTimeMillis() / 1000L);
                 instance.transactionValidator.updateStatus(transactionViewModel);
                 transactionViewModel.updateSender("local");
