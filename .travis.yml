@@ -40,6 +40,11 @@ install:
       && cd go-ipfs/
       && sudo ./install.sh
       && cd ..
+  # private-iota-testnet milestone
+    - git clone https://github.com/schierlm/private-iota-testnet.git --depth 1
+      && cd private-iota-testnet
+      && mvn package
+      && cd ..
 
 before_script:
   - cd ./scripts/iota_api && python ./app.py &> /tmp/app.log &
@@ -58,6 +63,8 @@ script:
   #run jar sanity tests
   - VERSION=$(mvn help:evaluate -Dexpression=project.version | grep -E '^[0-9.]+')
   - echo $VERSION
+  # milestone
+  - java -jar private-iota-testnet/target/iota-testnet-tools-0.1-SNAPSHOT-jar-with-dependencies.jar Coordinator localhost 14700
   #jacoco prep (appends to mvn run)
   - JACOCO_V=$(mvn help:evaluate -Dexpression=jacoco.version | grep -E '^[0-9.]+')
   - export _JAVA_OPTIONS="$_JAVA_OPTIONS -javaagent:$HOME/.m2/repository/org/jacoco/org.jacoco.agent/$JACOCO_V/org.jacoco.agent-$JACOCO_V-runtime.jar=destfile=$PWD/target/jacoco.exec,output=file,append=true,dumponexit=true"
@@ -78,6 +85,11 @@ after_success:
   #codacy-coverage send report. Uses Travis Env variable (CODACY_PROJECT_TOKEN)
   - test $TRAVIS_PULL_REQUEST = "false" && test $TRAVIS_JDK_VERSION = "oraclejdk8" && wget -O codacy-coverage-reporter-assembly-latest.jar $(curl https://api.github.com/repos/codacy/codacy-coverage-reporter/releases/latest | jq -r '.assets[0].browser_download_url')
   - test $TRAVIS_PULL_REQUEST = "false" && test $TRAVIS_JDK_VERSION = "oraclejdk8" && java -jar codacy-coverage-reporter-assembly-latest.jar report -l Java -r target/site/jacoco/jacoco.xml
+
+after_failure:
+  - cat /tmp/app.log
+  - cat /tmp/ipfs.log
+  #- cat iri/node1/iri.log
 
 deploy:
 - provider: releases
