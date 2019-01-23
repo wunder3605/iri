@@ -34,9 +34,15 @@ install:
     - sudo pip install pyota
     - sudo pip install docker
     - sudo pip install mock
+  # install ipfs
+    - wget https://dist.ipfs.io/go-ipfs/v0.4.18/go-ipfs_v0.4.18_linux-arm64.tar.gz
+      && tar xf go-ipfs_v0.4.18_linux-arm64.tar.gz
+      && cd go-ipfs/
+      && ./install.sh
 
 before_script:
   - cd ./scripts/iota_api && python ./app.py &> /tmp/app.log &
+  - ipfs daemon &> /tmp/ipfs.log &
 
 script:
   #run tests and integration tests
