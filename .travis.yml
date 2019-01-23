@@ -41,11 +41,6 @@ install:
       && cd go-ipfs/
       && sudo ./install.sh
       && cd ..
-  # private-iota-testnet milestone
-    - git clone https://github.com/schierlm/private-iota-testnet.git --depth 1
-      && cd private-iota-testnet
-      && mvn package
-      && cd ..
 
 before_script:
   - cd ./scripts/iota_api
