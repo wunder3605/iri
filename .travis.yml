@@ -63,8 +63,6 @@ script:
   #run jar sanity tests
   - VERSION=$(mvn help:evaluate -Dexpression=project.version | grep -E '^[0-9.]+')
   - echo $VERSION
-  # milestone
-  - java -jar private-iota-testnet/target/iota-testnet-tools-0.1-SNAPSHOT-jar-with-dependencies.jar Coordinator localhost 14700
   #jacoco prep (appends to mvn run)
   - JACOCO_V=$(mvn help:evaluate -Dexpression=jacoco.version | grep -E '^[0-9.]+')
   - export _JAVA_OPTIONS="$_JAVA_OPTIONS -javaagent:$HOME/.m2/repository/org/jacoco/org.jacoco.agent/$JACOCO_V/org.jacoco.agent-$JACOCO_V-runtime.jar=destfile=$PWD/target/jacoco.exec,output=file,append=true,dumponexit=true"
