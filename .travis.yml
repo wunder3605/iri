@@ -34,7 +34,7 @@ install:
     - sudo pip install pyota
     - sudo pip install docker
     - sudo pip install mock
-    - sudo pip install cryptography==2.2.2
+    - sudo pip install cryptography==2.5
   # install ipfs
     - wget https://dist.ipfs.io/go-ipfs/v0.4.18/go-ipfs_v0.4.18_linux-amd64.tar.gz
       && tar xf go-ipfs_v0.4.18_linux-amd64.tar.gz
@@ -88,7 +88,7 @@ after_success:
 after_failure:
   - cat /tmp/app.log
   - cat /tmp/ipfs.log
-  #- cat iri/node1/iri.log
+  - cat iri/node1/iri.log
 
 deploy:
 - provider: releases
