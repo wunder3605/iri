@@ -39,6 +39,7 @@ install:
       && tar xf go-ipfs_v0.4.18_linux-arm64.tar.gz
       && cd go-ipfs/
       && sudo ./install.sh
+      && cd ..
 
 before_script:
   - cd ./scripts/iota_api && python ./app.py &> /tmp/app.log &
