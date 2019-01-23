@@ -90,7 +90,7 @@ after_success:
 after_failure:
   - cat /tmp/app.log
   - cat /tmp/ipfs.log
-  - cat iri/node1/iri.log
+  - cat ../../iri-regression-tests/iri/node1/iri.log
 
 deploy:
 - provider: releases
