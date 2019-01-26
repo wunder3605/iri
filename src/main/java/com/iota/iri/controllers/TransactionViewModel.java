@@ -534,7 +534,8 @@ public class TransactionViewModel {
             txnCount = idNode.asLong();
         } catch (IllegalArgumentException e) {
             return 0;
-        } catch (IOException e) {
+        } catch (Exception e) {
+            // TODO: 1. json parse error, 2. milestone parse error.
             txnCount = 1;
         }
 
