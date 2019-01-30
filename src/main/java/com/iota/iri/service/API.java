@@ -693,9 +693,12 @@ public class API {
             if(transactionViewModel.store(instance.tangle)) {
                 // add batch of txns count.
                 if (BaseIotaConfig.getInstance().isEnableBatchTxns()) {
-                    long count = transactionViewModel.addBatchTxnCount(instance.tangle);
-
-                    log.info("received batch of {} transactions from api.", count);
+                    try {
+                        long count = transactionViewModel.addBatchTxnCount(instance.tangle);
+                        log.info("received batch of {} transactions from api.", count);
+                    } catch (Exception e) {
+                        log.warn("Error adding batch tx count", e);
+                    }
                 }
 
                 transactionViewModel.setArrivalTime(System.currentTimeMillis() / 1000L);

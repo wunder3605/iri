@@ -15,8 +15,12 @@ import com.iota.iri.storage.Tangle;
 import com.iota.iri.utils.Converter;
 import com.iota.iri.utils.Pair;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.zip.GZIPInputStream;
 
 public class TransactionViewModel {
 
@@ -521,23 +525,40 @@ public class TransactionViewModel {
         return "transaction " + hash.toString();
     }
 
-    public long addBatchTxnCount(Tangle tangle) {
-        long txnCount = 0;
-        try {
-            byte[] tritsSig = getSignature();
-            String trytesSig = Converter.trytes(tritsSig);
-            String asciiSig = Converter.trytesToAscii(trytesSig);
+    public long addBatchTxnCount(Tangle tangle) throws Exception {
+        long txnCount;
 
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode rootNode = objectMapper.readTree(asciiSig);
-            JsonNode idNode = rootNode.path("tx_num");
-            txnCount = idNode.asLong();
-        } catch (IllegalArgumentException e) {
-            return 0;
-        } catch (Exception e) {
-            // TODO: 1. json parse error, 2. milestone parse error.
-            txnCount = 1;
+        byte[] tritsSig = getSignature();
+        String trytesSig = Converter.trytes(tritsSig);
+        byte[] bytes = Converter.trytesToBytes(trytesSig);
+
+        int length;
+        // TODO: make the procedure more beautiful.
+        try {
+            length = Integer.parseInt(new String((Arrays.copyOfRange(bytes, 0, 4)), StandardCharsets.US_ASCII));
+        } catch (Exception e){
+            /* milestone and other non-batch transactions */
+            tangle.addTxnCount(1);
+            throw e;
         }
+
+        byte[] subBytes = Arrays.copyOfRange(bytes, 4, 4 + length);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayInputStream in = new ByteArrayInputStream(subBytes);
+        GZIPInputStream inStream = new GZIPInputStream(in);
+        byte[] buffer = new byte[4096];
+        int num;
+        while ((num = inStream.read(buffer)) >= 0) {
+            out.write(buffer, 0, num);
+        }
+
+        byte[] unCompressed = out.toByteArray();
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode rootNode = objectMapper.readTree(unCompressed);
+        JsonNode idNode = rootNode.path("tx_num");
+        txnCount = idNode.asLong();
 
         tangle.addTxnCount(txnCount);
 

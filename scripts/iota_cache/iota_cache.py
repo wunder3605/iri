@@ -46,7 +46,7 @@ class IotaCache(object):
         txn.trunk_transaction_hash = txns[u'trunkTransaction']
         txn.branch_transaction_hash = txns[u'branchTransaction']
         txn.tag = Tag(TryteString.from_string(tag))
-        txn.signature_message_fragment = Fragment(TryteString.from_string(data))
+        txn.signature_message_fragment = Fragment(TryteString.from_bytes(("%04d" % len(data)) + data))
         attach_trytes = attachToTangle(self.uri, txns[u'trunkTransaction'].__str__(), txns[u'branchTransaction'].__str__(), 1, txn.as_tryte_string().__str__())
         res = self.api.broadcast_and_store(attach_trytes[u'trytes'])
         return res

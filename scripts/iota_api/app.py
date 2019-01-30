@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.append("..")
 import ConfigParser
@@ -9,9 +10,11 @@ from flask import Flask, request
 from iota_cache.iota_cache import IotaCache
 from tag_generator import TagGenerator
 from collections import deque
+import StringIO
+import gzip
 
 lock = threading.Lock()
-def send_to_ipfs_iota(tx_string, tx_num=1):
+def send_to_iota(tx_string, tx_num=1):
     global lock
 
     with lock:
@@ -21,17 +24,17 @@ def send_to_ipfs_iota(tx_string, tx_num=1):
         f.flush()
         f.close()
 
-        ipfs_hash = commands.getoutput(' '.join(['ipfs', 'add', filename, '-q']))
+        data = json.dumps({"address": tx_string, "tx_num": tx_num}, sort_keys=True)
 
-        print("[INFO]Cache json %s in ipfs, the hash is %s." % (tx_string, ipfs_hash))
-        if tx_num == 1:
-            data = ipfs_hash
-        else:
-            data = json.dumps({"address": ipfs_hash, "tx_num": tx_num}, sort_keys=True)
+        out = StringIO.StringIO()
+        with gzip.GzipFile(fileobj=out, mode="w") as f:
+            f.write(data)
+        compressed_data = out.getvalue()
+        #print(":".join("{:02x}".format(ord(c)) for c in compressed_data), file=sys.stderr)
 
-        cache.cache_txn_in_tangle_simple(data, TagGenerator.get_current_tag("TR"))
+        cache.cache_txn_in_tangle_simple(compressed_data, TagGenerator.get_current_tag("TR"))
 
-        print("[INFO]Cache hash %s in tangle, the tangle tag is %s." % (ipfs_hash, TagGenerator.get_current_tag("TR")))
+        print("[INFO]Cache data in tangle, the tangle tag is %s." % (TagGenerator.get_current_tag("TR")), file=sys.stderr)
 
     # return 'ok'
 
@@ -59,7 +62,7 @@ def get_cache():
         tx = txn_cache.popleft()
         all_txs += tx
 
-    send_to_ipfs_iota(all_txs, nums)
+    send_to_iota(all_txs, nums)
 
 
 app = Flask(__name__)
@@ -84,7 +87,7 @@ def put_file():
 
     req_json["timestamp"] = str(time.time())
 
-    send_to_ipfs_iota(json.dumps(req_json, sort_keys=True))
+    send_to_iota(json.dumps(req_json, sort_keys=True))
 
     return 'ok'
 
@@ -100,7 +103,7 @@ def put_cache():
     tx_string = json.dumps(req_json, sort_keys=True)
     if len(txn_cache) >= CACHE_SIZE:
         # ring-buffer is full, send to ipfs and iota directly.
-        send_to_ipfs_iota(tx_string)
+        send_to_iota(tx_string)
     else:
         # cache in local ring-buffer
         txn_cache.append(tx_string)
