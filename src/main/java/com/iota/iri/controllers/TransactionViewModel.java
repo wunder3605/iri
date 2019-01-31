@@ -2,13 +2,9 @@ package com.iota.iri.controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.iota.iri.model.*;
-import com.iota.iri.model.persistables.Address;
-import com.iota.iri.model.persistables.Approvee;
-import com.iota.iri.model.persistables.Bundle;
-import com.iota.iri.model.persistables.ObsoleteTag;
-import com.iota.iri.model.persistables.Tag;
-import com.iota.iri.model.persistables.Transaction;
+import com.iota.iri.model.Hash;
+import com.iota.iri.model.HashFactory;
+import com.iota.iri.model.persistables.*;
 import com.iota.iri.storage.Indexable;
 import com.iota.iri.storage.Persistable;
 import com.iota.iri.storage.Tangle;
@@ -17,7 +13,6 @@ import com.iota.iri.utils.Pair;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
@@ -532,15 +527,14 @@ public class TransactionViewModel {
         String trytesSig = Converter.trytes(tritsSig);
         byte[] bytes = Converter.trytesToBytes(trytesSig);
 
-        int length;
-        // TODO: make the procedure more beautiful.
-        try {
-            length = Integer.parseInt(new String((Arrays.copyOfRange(bytes, 0, 4)), StandardCharsets.US_ASCII));
-        } catch (Exception e){
+        String headerStr = new String((Arrays.copyOfRange(bytes, 0, 4)), StandardCharsets.US_ASCII);
+        if (headerStr.equals("\0\0\0\0")) {
             /* milestone and other non-batch transactions */
             tangle.addTxnCount(1);
-            throw e;
+            return 1;
         }
+
+        int length = Integer.parseInt(headerStr);
 
         byte[] subBytes = Arrays.copyOfRange(bytes, 4, 4 + length);
 
