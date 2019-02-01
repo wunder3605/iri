@@ -521,41 +521,45 @@ public class TransactionViewModel {
     }
 
     public long addBatchTxnCount(Tangle tangle) throws Exception {
-        long txnCount;
-
         byte[] tritsSig = getSignature();
         String trytesSig = Converter.trytes(tritsSig);
         byte[] bytes = Converter.trytesToBytes(trytesSig);
 
+        // get length
         String headerStr = new String((Arrays.copyOfRange(bytes, 0, 4)), StandardCharsets.US_ASCII);
         if (headerStr.equals("\0\0\0\0")) {
             /* milestone and other non-batch transactions */
             tangle.addTxnCount(1);
             return 1;
         }
-
         int length = Integer.parseInt(headerStr);
 
+        // get compressed data according to length
         byte[] subBytes = Arrays.copyOfRange(bytes, 4, 4 + length);
 
+        // decompression
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayInputStream in = new ByteArrayInputStream(subBytes);
-        GZIPInputStream inStream = new GZIPInputStream(in);
-        byte[] buffer = new byte[4096];
-        int num;
-        while ((num = inStream.read(buffer)) >= 0) {
-            out.write(buffer, 0, num);
+        long txnCount = 0;
+        try {
+            GZIPInputStream inStream = new GZIPInputStream(in);
+            byte[] buffer = new byte[4096];
+            int num;
+            while ((num = inStream.read(buffer)) >= 0) {
+                out.write(buffer, 0, num);
+            }
+
+            byte[] unCompressed = out.toByteArray();
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode rootNode = objectMapper.readTree(unCompressed);
+            JsonNode idNode = rootNode.path("tx_num");
+            txnCount = idNode.asLong();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
-        byte[] unCompressed = out.toByteArray();
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode rootNode = objectMapper.readTree(unCompressed);
-        JsonNode idNode = rootNode.path("tx_num");
-        txnCount = idNode.asLong();
-
         tangle.addTxnCount(txnCount);
-
         return txnCount;
     }
 }

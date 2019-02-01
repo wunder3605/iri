@@ -1391,6 +1391,12 @@ public class API {
         // do pow
         List<String> powResult = attachToTangleStatement(txToApprove.get(0), txToApprove.get(1), 9, transactions);
         broadcastTransactionsStatement(powResult);
+
+        // !!!! NEW ADDED
+        if (BaseIotaConfig.getInstance().isEnableBatchTxns()) {
+            storeTransactionsStatement(powResult);
+        }
+
         return AbstractResponse.createEmptyResponse();
     }
 }

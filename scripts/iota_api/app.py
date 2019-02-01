@@ -12,57 +12,50 @@ from tag_generator import TagGenerator
 from collections import deque
 import StringIO
 import gzip
+from iota import TryteString
 
-lock = threading.Lock()
-def send_to_iota(tx_string, tx_num=1):
-    global lock
-
-    with lock:
-        filename = 'json'
-        f = open(filename, 'w')
-        f.write(tx_string)
-        f.flush()
-        f.close()
-
-        data = json.dumps({"address": tx_string, "tx_num": tx_num}, sort_keys=True)
-
-        out = StringIO.StringIO()
-        with gzip.GzipFile(fileobj=out, mode="w") as f:
-            f.write(data)
-        compressed_data = out.getvalue()
-        #print(":".join("{:02x}".format(ord(c)) for c in compressed_data), file=sys.stderr)
-
-        cache.cache_txn_in_tangle_simple(compressed_data, TagGenerator.get_current_tag("TR"))
-
-        print("[INFO]Cache data in tangle, the tangle tag is %s." % (TagGenerator.get_current_tag("TR")), file=sys.stderr)
-
-    # return 'ok'
 
 # txs buffer. dequeue is thread-safe
-CACHE_SIZE = 10000
-txn_cache = deque(maxlen=CACHE_SIZE)
+txn_cache = deque()
 
-# timer interval == 10s
-TIMER_INTERVAL = 10
+# timer interval
+TIMER_INTERVAL = 20
 
 BATCH_SIZE = 100
 
+COMPRESSED_SIZE = 7
+
+lock = threading.Lock()
 def get_cache():
     # timer
     global timer_thread
     timer_thread = threading.Timer(TIMER_INTERVAL, get_cache)
     timer_thread.start()
 
-    nums = min(len(txn_cache), BATCH_SIZE)
-    if nums == 0:
-        return
+    global lock
 
-    all_txs = ""
-    for i in range(nums):
-        tx = txn_cache.popleft()
-        all_txs += tx
+    with lock:
+        nums = min(len(txn_cache), BATCH_SIZE)
+        if nums == 0:
+            return
 
-    send_to_iota(all_txs, nums)
+        all_txs = ""
+        all_trytes = ""
+        for i in range(nums):
+            tx = txn_cache.popleft()
+            all_txs += tx
+            if (i + 1) % COMPRESSED_SIZE == 0 or i == nums -1:
+                out = StringIO.StringIO()
+                with gzip.GzipFile(fileobj=out, mode="w") as f:
+                    f.write(all_txs)
+                compressed_data = out.getvalue()
+                trytes = TryteString.from_bytes(compressed_data).__str__()
+                if len(trytes) < 2187:
+                    trytes += '9' * (2187 - len(trytes))
+                all_trytes += trytes
+                all_txs = ""
+        cache.cache_txn_in_tangle_message(all_trytes)
+        print("[INFO]Cache data in tangle, the tangle tag is %s." % (TagGenerator.get_current_tag("TR")), file=sys.stderr)
 
 
 app = Flask(__name__)
@@ -87,7 +80,9 @@ def put_file():
 
     req_json["timestamp"] = str(time.time())
 
-    send_to_iota(json.dumps(req_json, sort_keys=True))
+    cache.cache_txn_in_tangle_message(TryteString.from_string(json.dumps(req_json, sort_keys=True)).__str__())
+
+    print("[INFO]Cache data in tangle, the tangle tag is %s." % (TagGenerator.get_current_tag("TR")), file=sys.stderr)
 
     return 'ok'
 
@@ -101,12 +96,13 @@ def put_cache():
     req_json["timestamp"] = str(time.time())
 
     tx_string = json.dumps(req_json, sort_keys=True)
-    if len(txn_cache) >= CACHE_SIZE:
+
+    # cache in local ring-buffer
+    txn_cache.append(tx_string)
+
+    if len(txn_cache) >= BATCH_SIZE:
         # ring-buffer is full, send to ipfs and iota directly.
-        send_to_iota(tx_string)
-    else:
-        # cache in local ring-buffer
-        txn_cache.append(tx_string)
+        threading.Thread(target=get_cache).start()
 
     return 'ok'
 
