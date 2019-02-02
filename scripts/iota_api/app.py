@@ -49,14 +49,14 @@ def send(tx_string, tx_num=1):
 def send_to_ipfs_iota(tx_string, tx_num):
     global lock
     with lock:
-        filename = 'json'
+        filename = '/tmp/json'
         f = open(filename, 'w')
         f.write(tx_string)
         f.flush()
         f.close()
 
         ipfs_hash = commands.getoutput(' '.join(['ipfs', 'add', filename, '-q']))
-        print("[INFO]Cache json %s in ipfs, the hash is %s." % (tx_string, ipfs_hash))
+        print("[INFO]Cache json %s in ipfs, the hash is %s." % (tx_string, ipfs_hash), file=sys.stderr)
 
         if tx_num == 1:
             data = ipfs_hash
@@ -64,7 +64,7 @@ def send_to_ipfs_iota(tx_string, tx_num):
             data = json.dumps({"address": ipfs_hash, "tx_num": tx_num}, sort_keys=True)
 
         cache.cache_txn_in_tangle_simple(data, TagGenerator.get_current_tag("TR"))
-        print("[INFO]Cache hash %s in tangle, the tangle tag is %s." % (ipfs_hash, TagGenerator.get_current_tag("TR")))
+        print("[INFO]Cache hash %s in tangle, the tangle tag is %s." % (ipfs_hash, TagGenerator.get_current_tag("TR")), file=sys.stderr)
 
 def send_to_iota(tx_string, tx_num):
     global lock
@@ -74,8 +74,8 @@ def send_to_iota(tx_string, tx_num):
         if enable_batching is False:
             cache.cache_txn_in_tangle_simple(data, TagGenerator.get_current_tag("TR"))
         else:
-            compressed_data = compress_str(data)
-            cache.cache_txn_in_tangle_message(compressed_data, TagGenerator.get_current_tag("TR"))
+            compressed_data = TryteString.from_bytes(compress_str(data)).__str__()
+            cache.cache_txn_in_tangle_message(compressed_data)
 
         print("[INFO]Cache data in tangle, the tangle tag is %s." % (TagGenerator.get_current_tag("TR")), file=sys.stderr)
 
@@ -105,10 +105,15 @@ def get_cache():
         if nums == 0:
             return
 
-        all_txs = ""
+        all_txs = "["
         for i in range(nums):
             tx = txn_cache.popleft()
-            all_txs += tx
+            if i == nums - 1:
+                all_txs += tx
+            else:
+                all_txs += tx + ","
+        all_txs += "]"
+        print("txs = \\", all_txs, "/", file=sys.stderr)
 
     send(all_txs, nums)
 

@@ -1343,8 +1343,9 @@ public class API {
         // decompression goes here
         String msgStr = message;
         if(BaseIotaConfig.getInstance().isEnableCompressionTxns()) {
+            byte[] bytes = Converter.trytesToBytes(message);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            ByteArrayInputStream in = new ByteArrayInputStream(message.getBytes());
+            ByteArrayInputStream in = new ByteArrayInputStream(bytes);
             GZIPInputStream inStream = new GZIPInputStream(in);          
             byte[] buffer = new byte[16384];
             int num = 0;
@@ -1361,15 +1362,21 @@ public class API {
         JsonNode numNode = rootNode.path("tx_num");
         JsonNode txsNode = rootNode.path("txn_content");
         long txnCount = numNode.asLong();
-        String[] parts = txsNode.toString().split("}");
-        if (parts.length != txnCount) {
-            log.error("Wrong message - tx_num is {}, but txn_content have {} transactions", txnCount, parts.length);
-            return AbstractResponse.createEmptyResponse();
-        }
         StringBuilder msgBuilder = new StringBuilder();
-        for (String part: parts) {
-            String s = StringUtils.rightPad(Converter.asciiToTrytes(part), txMessageSize, '9');
-            msgBuilder.append(s);
+        if (txsNode.isArray()) {
+            int i = 0;
+            for (final JsonNode txNode : txsNode) {
+                String s = StringUtils.rightPad(Converter.asciiToTrytes(txNode.toString()), txMessageSize, '9');
+                msgBuilder.append(s);
+                i++;
+            }
+            if (i != txnCount) {
+                log.error("Wrong message - tx_num is {}, but txn_content have {} transactions", txnCount, i);
+                return AbstractResponse.createEmptyResponse();
+            }
+        } else {
+            log.error("Wrong message - txn_content is not json array {}", txsNode);
+            return AbstractResponse.createEmptyResponse();
         }
         String msg = msgBuilder.toString();
 

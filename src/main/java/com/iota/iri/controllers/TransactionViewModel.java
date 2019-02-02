@@ -16,6 +16,7 @@ import com.iota.iri.utils.Converter;
 import com.iota.iri.utils.Pair;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class TransactionViewModel {
@@ -522,24 +523,31 @@ public class TransactionViewModel {
     }
 
     public long addBatchTxnCount(Tangle tangle) {
-        long txnCount = 0;
+        byte[] tritsSig = getSignature();
+        String trytesSig = Converter.trytes(tritsSig);
+
         try {
-            byte[] tritsSig = getSignature();
-            String trytesSig = Converter.trytes(tritsSig);
-            String asciiSig = Converter.trytesToAscii(trytesSig);
+            byte[] bytesSig = Converter.trytesToBytes(trytesSig);
+
+            // milestone
+            String headerStr = new String((Arrays.copyOfRange(bytesSig, 0, 4)), StandardCharsets.US_ASCII);
+            if (headerStr.equals("\0\0\0\0")) {
+                tangle.addTxnCount(1);
+                return 1;
+            }
 
             ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode rootNode = objectMapper.readTree(asciiSig);
+            JsonNode rootNode = objectMapper.readTree(bytesSig);
             JsonNode idNode = rootNode.path("tx_num");
-            txnCount = idNode.asLong();
-        } catch (IllegalArgumentException e) {
-            return 0;
+            long txnCount = idNode.asLong();
+            tangle.addTxnCount(txnCount);
+            return txnCount;
         } catch (Exception e) {
-            // TODO: 1. json parse error, 2. milestone parse error.
-            txnCount = 1;
+            e.printStackTrace();
+            // json parse error.
+            return 0;
         }
 
-        tangle.addTxnCount(txnCount);
-        return txnCount;
+
     }
 }
