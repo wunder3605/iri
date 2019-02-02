@@ -3,7 +3,7 @@ sys.path.append("..")
 import time
 from iota import Iota, Address, ProposedTransaction, Tag, Transaction, TryteString, TransactionTrytes, ProposedBundle, Nonce, BundleHash,TransactionHash, Fragment
 from six import binary_type, moves as compat, text_type
-from iota_api.api import attachToTangle, storeMessage, storeTransactions
+from iota_api.api import attachToTangle, storeMessage
 
 class IotaCache(object):
 
