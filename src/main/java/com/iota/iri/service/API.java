@@ -1340,47 +1340,75 @@ public class API {
 
         final int txMessageSize = (int) TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3;
 
-        // decompression goes here
-        String msgStr = message;
-        if(BaseIotaConfig.getInstance().isEnableCompressionTxns()) {
-            byte[] bytes = Converter.trytesToBytes(message);
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            ByteArrayInputStream in = new ByteArrayInputStream(bytes);
-            GZIPInputStream inStream = new GZIPInputStream(in);          
-            byte[] buffer = new byte[16384];
-            int num = 0;
-            while ((num = inStream.read(buffer)) >= 0) {
-                out.write(buffer, 0, num);
-            }
-             byte[] unCompressed = out.toByteArray();
-            msgStr = new String(unCompressed);
+        String msgStr = decompress(message);
+        
+        List<String> transactions;
+        if(BaseIotaConfig.getInstance().isEnableBatchTxns()) {
+            transactions = parseTransactions(msgStr,  address,  txMessageSize);
+        } else {
+            transactions = parseMessages(msgStr,  address,  txMessageSize);
         }
 
+        if(transactions != null && !transactions.isEmpty()) {
+            // do pow
+            List<String> powResult = attachToTangleStatement(txToApprove.get(0), txToApprove.get(1), 9, transactions);
+            storeTransactionsStatement(powResult);
+            broadcastTransactionsStatement(powResult);
+        }
+
+        return AbstractResponse.createEmptyResponse();
+    }
+
+    private String decompress(final String message) {
+        // decompression goes here
+        String msgStr = message;
+        try {
+            if(BaseIotaConfig.getInstance().isEnableCompressionTxns()) {
+                byte[] bytes = Converter.trytesToBytes(message);
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+                GZIPInputStream inStream = new GZIPInputStream(in);          
+                byte[] buffer = new byte[16384];
+                int num = 0;
+                while ((num = inStream.read(buffer)) >= 0) {
+                    out.write(buffer, 0, num);
+                }
+                byte[] unCompressed = out.toByteArray();
+                msgStr = new String(unCompressed);
+            }
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+        return msgStr;
+    }
+
+    private List<String> parseTransactions(String msg, String address, int txMessageSize) {
         // parse count here
-        ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode rootNode = objectMapper.readTree(msgStr);
-        JsonNode numNode = rootNode.path("tx_num");
-        JsonNode txsNode = rootNode.path("txn_content");
-        long txnCount = numNode.asLong();
-        StringBuilder msgBuilder = new StringBuilder();
-        if (txsNode.isArray()) {
+        List<String> ret = new ArrayList<>();
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode rootNode = objectMapper.readTree(msg);
+            JsonNode numNode = rootNode.path("tx_num");
+            JsonNode txsNode = rootNode.path("txn_content");
+            long txnCount = numNode.asLong();
+            StringBuilder msgBuilder = new StringBuilder();
             int i = 0;
             for (final JsonNode txNode : txsNode) {
-                String s = StringUtils.rightPad(Converter.asciiToTrytes(txNode.toString()), txMessageSize, '9');
+                String s = "";
                 msgBuilder.append(s);
                 i++;
             }
             if (i != txnCount) {
                 log.error("Wrong message - tx_num is {}, but txn_content have {} transactions", txnCount, i);
-                return AbstractResponse.createEmptyResponse();
+                return null;
             }
-        } else {
-            log.error("Wrong message - txn_content is not json array {}", txsNode);
-            return AbstractResponse.createEmptyResponse();
+        } catch(IOException e) {
+            e.printStackTrace();
         }
-        String msg = msgBuilder.toString();
+        return ret;
+    }
 
-
+    private List<String> parseMessages(String msg, String address, int txMessageSize) {
         final int txCount = (int) (msg.length() + txMessageSize - 1) / txMessageSize;
 
         final byte[] timestampTrits = new byte[TransactionViewModel.TIMESTAMP_TRINARY_SIZE];
@@ -1435,16 +1463,7 @@ public class API {
         final String bundleHash = Converter.trytes(essenceTrits, 0, essenceTrits.length);
 
         transactions = transactions.stream().map(tx -> StringUtils.rightPad(tx + bundleHash, TRYTES_SIZE, '9')).collect(Collectors.toList());
-
-        // do pow
-        List<String> powResult = attachToTangleStatement(txToApprove.get(0), txToApprove.get(1), 9, transactions);
-        broadcastTransactionsStatement(powResult);
-
-        // !!!! NEW ADDED
-        if (BaseIotaConfig.getInstance().isEnableBatchTxns()) {
-            storeTransactionsStatement(powResult);
-        }
-
-        return AbstractResponse.createEmptyResponse();
+        return transactions;
     }
+
 }
