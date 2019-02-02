@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys
 sys.path.append("..")
 import ConfigParser
@@ -14,6 +13,65 @@ import StringIO
 import gzip
 from iota import TryteString
 
+cf = ConfigParser.ConfigParser()
+cf.read("conf")
+iota_addr = cf.get("iota", "addr")
+iota_seed = cf.get("iota", "seed")
+enable_ipfs = cf.getboolean("iota", "enableIpfs")
+enable_compression = cf.getboolean("iota", "enableCompression")
+enable_batching = cf.getboolean("iota", "enableBatching") 
+cache = IotaCache(iota_addr, iota_seed)
+
+lock = threading.Lock()
+
+def compress_str(data):
+    if enable_compression == True:
+        out = StringIO.StringIO()
+        with gzip.GzipFile(fileobj=out, mode="w") as f:
+            f.write(data)
+        compressed_data = out.getvalue()
+        return compressed_data
+    else
+        return data
+
+def send(tx_string, tx_num=1):
+    if enable_ipfs == True:
+        send_to_ipfs_iota(tx_string, tx_num)
+    else:
+        send_to_iota(tx_string, tx_num)
+
+def send_to_ipfs_iota(tx_string, tx_num=1):
+    global lock
+    with lock:
+        filename = 'json'
+        f = open(filename, 'w')
+        f.write(tx_string)
+        f.flush()
+        f.close()
+        ipfs_hash = commands.getoutput(' '.join(['ipfs', 'add', filename, '-q']))
+        print("[INFO]Cache json %s in ipfs, the hash is %s." % (tx_string, ipfs_hash))
+        if tx_num == 1:
+            data = ipfs_hash
+        else:
+            data = json.dumps({"address": ipfs_hash, "tx_num": tx_num}, sort_keys=True)
+        cache.cache_txn_in_tangle_simple(data, TagGenerator.get_current_tag("TR"))
+        print("[INFO]Cache hash %s in tangle, the tangle tag is %s." % (ipfs_hash, TagGenerator.get_current_tag("TR")))
+
+def send_to_iota(tx_string, tx_num=1):
+    global lock
+    with lock:
+        filename = 'json'
+        f = open(filename, 'w')
+        f.write(tx_string)
+        f.flush()
+        f.close()
+        data = json.dumps({"txn_content": tx_string, "tx_num": tx_num}, sort_keys=True)
+        compressed_data = compress_str(data)
+        if enable_batching == False and enable_compression == False:
+            cache.cache_txn_in_tangle_simple(compressed_data, TagGenerator.get_current_tag("TR"))
+        else:
+            cache.cache_txn_in_tangle_message(compressed_data, TagGenerator.get_current_tag("TR"))
+        print("[INFO]Cache data in tangle, the tangle tag is %s." % (TagGenerator.get_current_tag("TR")), file=sys.stderr)
 
 # txs buffer. dequeue is thread-safe
 txn_cache = deque()
@@ -34,37 +92,9 @@ def get_cache():
 
     global lock
 
-    with lock:
-        nums = min(len(txn_cache), BATCH_SIZE)
-        if nums == 0:
-            return
-
-        all_txs = ""
-        all_trytes = ""
-        for i in range(nums):
-            tx = txn_cache.popleft()
-            all_txs += tx
-            if (i + 1) % COMPRESSED_SIZE == 0 or i == nums -1:
-                out = StringIO.StringIO()
-                with gzip.GzipFile(fileobj=out, mode="w") as f:
-                    f.write(all_txs)
-                compressed_data = out.getvalue()
-                trytes = TryteString.from_bytes(compressed_data).__str__()
-                if len(trytes) < 2187:
-                    trytes += '9' * (2187 - len(trytes))
-                all_trytes += trytes
-                all_txs = ""
-        cache.cache_txn_in_tangle_message(all_trytes)
-        print("[INFO]Cache data in tangle, the tangle tag is %s." % (TagGenerator.get_current_tag("TR")), file=sys.stderr)
-
+    send(all_txs, nums)
 
 app = Flask(__name__)
-
-cf = ConfigParser.ConfigParser()
-cf.read("conf")
-iota_addr = cf.get("iota", "addr")
-iota_seed = cf.get("iota", "seed")
-cache = IotaCache(iota_addr, iota_seed)
 
 
 @app.route('/')
@@ -80,9 +110,7 @@ def put_file():
 
     req_json["timestamp"] = str(time.time())
 
-    cache.cache_txn_in_tangle_message(TryteString.from_string(json.dumps(req_json, sort_keys=True)).__str__())
-
-    print("[INFO]Cache data in tangle, the tangle tag is %s." % (TagGenerator.get_current_tag("TR")), file=sys.stderr)
+    send(json.dumps(req_json, sort_keys=True))
 
     return 'ok'
 
@@ -102,7 +130,10 @@ def put_cache():
 
     if len(txn_cache) >= BATCH_SIZE:
         # ring-buffer is full, send to ipfs and iota directly.
-        threading.Thread(target=get_cache).start()
+        send(tx_string)
+    else:
+        # cache in local ring-buffer
+        txn_cache.append(tx_string)
 
     return 'ok'
 

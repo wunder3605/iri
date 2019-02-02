@@ -374,6 +374,9 @@ public class Node {
         if (stored) {
             // add batch of txns count.
             if (BaseIotaConfig.getInstance().isEnableBatchTxns()) {
+                long count = transactionViewModel.addBatchTxnCount(instance.tangle);
+                log.info("received batch of {} transactions from api.", count);
+            } else {
                 tangle.addTxnCount(1);
             }
 

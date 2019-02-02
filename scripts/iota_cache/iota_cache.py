@@ -3,7 +3,7 @@ sys.path.append("..")
 import time
 from iota import Iota, Address, ProposedTransaction, Tag, Transaction, TryteString, TransactionTrytes, ProposedBundle, Nonce, BundleHash,TransactionHash, Fragment
 from six import binary_type, moves as compat, text_type
-from iota_api.api import attachToTangle, storeMessage
+from iota_api.api import attachToTangle, storeMessage, storeTransactions
 
 class IotaCache(object):
 
@@ -53,10 +53,7 @@ class IotaCache(object):
         return res
 
     def cache_txn_in_tangle_message(self, data):
-        api_response = self.api.get_new_addresses()
-        addy = api_response['addresses'][0]
-        address = binary_type(addy).decode('ascii')
-
+        address = "JVSVAFSXWHUIZPFDLORNDMASGNXWFGZFMXGLCJQGFWFEZWWOA9KYSPHCLZHFBCOHMNCCBAGNACPIGHVYX"
         res = storeMessage(self.uri, address, data)
         return res
 

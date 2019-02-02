@@ -66,6 +66,10 @@ import static io.undertow.Handlers.path;
 import java.io.*;
 import java.net.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.zip.GZIPInputStream;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -702,6 +706,9 @@ public class API {
             if(transactionViewModel.store(instance.tangle)) {
                 // add batch of txns count.
                 if (BaseIotaConfig.getInstance().isEnableBatchTxns()) {
+                    long count = transactionViewModel.addBatchTxnCount(instance.tangle);
+                     log.info("received batch of {} transactions from api.", count);
+                } else {
                     instance.tangle.addTxnCount(1);
                 }
 
@@ -1331,9 +1338,26 @@ public class API {
     private synchronized AbstractResponse storeMessageStatement(final String address, final String message) throws Exception {
         final List<Hash> txToApprove = getTransactionToApproveTips(3, Optional.empty());
 
+        // parse count here
+
+        // decompression goes here
+        String msg = message;
+        if(BaseIotaConfig.getInstance().isEnableCompressionTxns()) {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ByteArrayInputStream in = new ByteArrayInputStream(message.getBytes());
+            GZIPInputStream inStream = new GZIPInputStream(in);          
+            byte[] buffer = new byte[16384];
+            int num = 0;
+            while ((num = inStream.read(buffer)) >= 0) {
+                out.write(buffer, 0, num);
+            }
+             byte[] unCompressed = out.toByteArray();
+             msg = new String(unCompressed);
+        }
+
         final int txMessageSize = (int) TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3;
 
-        final int txCount = (int) (message.length() + txMessageSize - 1) / txMessageSize;
+        final int txCount = (int) (msg.length() + txMessageSize - 1) / txMessageSize;
 
         final byte[] timestampTrits = new byte[TransactionViewModel.TIMESTAMP_TRINARY_SIZE];
         Converter.copyTrits(System.currentTimeMillis(), timestampTrits, 0, timestampTrits.length);
@@ -1349,9 +1373,9 @@ public class API {
         for (int i = 0; i < txCount; i++) {
             String tx;
             if (i != txCount - 1) {
-                tx = message.substring(i * txMessageSize, (i + 1) * txMessageSize);
+                tx = msg.substring(i * txMessageSize, (i + 1) * txMessageSize);
             } else {
-                tx = message.substring(i * txMessageSize);
+                tx = msg.substring(i * txMessageSize);
             }
 
             Converter.copyTrits(i, currentIndexTrits, 0, currentIndexTrits.length);

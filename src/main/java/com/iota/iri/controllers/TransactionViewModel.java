@@ -2,20 +2,21 @@ package com.iota.iri.controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.iota.iri.model.Hash;
-import com.iota.iri.model.HashFactory;
-import com.iota.iri.model.persistables.*;
+import com.iota.iri.model.*;
+import com.iota.iri.model.persistables.Address;
+import com.iota.iri.model.persistables.Approvee;
+import com.iota.iri.model.persistables.Bundle;
+import com.iota.iri.model.persistables.ObsoleteTag;
+import com.iota.iri.model.persistables.Tag;
+import com.iota.iri.model.persistables.Transaction;
 import com.iota.iri.storage.Indexable;
 import com.iota.iri.storage.Persistable;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.utils.Converter;
 import com.iota.iri.utils.Pair;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import java.util.*;
-import java.util.zip.GZIPInputStream;
 
 public class TransactionViewModel {
 
@@ -520,43 +521,22 @@ public class TransactionViewModel {
         return "transaction " + hash.toString();
     }
 
-    public long addBatchTxnCount(Tangle tangle) throws Exception {
-        byte[] tritsSig = getSignature();
-        String trytesSig = Converter.trytes(tritsSig);
-        byte[] bytes = Converter.trytesToBytes(trytesSig);
-
-        // get length
-        String headerStr = new String((Arrays.copyOfRange(bytes, 0, 4)), StandardCharsets.US_ASCII);
-        if (headerStr.equals("\0\0\0\0")) {
-            /* milestone and other non-batch transactions */
-            tangle.addTxnCount(1);
-            return 1;
-        }
-        int length = Integer.parseInt(headerStr);
-
-        // get compressed data according to length
-        byte[] subBytes = Arrays.copyOfRange(bytes, 4, 4 + length);
-
-        // decompression
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayInputStream in = new ByteArrayInputStream(subBytes);
+    public long addBatchTxnCount(Tangle tangle) {
         long txnCount = 0;
         try {
-            GZIPInputStream inStream = new GZIPInputStream(in);
-            byte[] buffer = new byte[4096];
-            int num;
-            while ((num = inStream.read(buffer)) >= 0) {
-                out.write(buffer, 0, num);
-            }
-
-            byte[] unCompressed = out.toByteArray();
+            byte[] tritsSig = getSignature();
+            String trytesSig = Converter.trytes(tritsSig);
+            String asciiSig = Converter.trytesToAscii(trytesSig);
 
             ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode rootNode = objectMapper.readTree(unCompressed);
+            JsonNode rootNode = objectMapper.readTree(asciiSig);
             JsonNode idNode = rootNode.path("tx_num");
             txnCount = idNode.asLong();
+        } catch (IllegalArgumentException e) {
+            return 0;
         } catch (Exception e) {
-            e.printStackTrace();
+            // TODO: 1. json parse error, 2. milestone parse error.
+            txnCount = 1;
         }
 
         tangle.addTxnCount(txnCount);
