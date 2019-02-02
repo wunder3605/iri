@@ -448,7 +448,7 @@ public abstract class BaseIotaConfig implements IotaConfig {
     }
 
     @JsonProperty
-    @Parameter(names = {"--ipfs-txns"}, description = DbConfig.Descriptions.ENABLE_COMPRESSION_TXNS)
+    @Parameter(names = {"--compression-txns"}, description = DbConfig.Descriptions.ENABLE_COMPRESSION_TXNS)
     protected void setEnableCompressionTxns(boolean enableCompressionTxns) {
         this.enableCompressionTxns = enableCompressionTxns;
     }
@@ -897,7 +897,7 @@ public abstract class BaseIotaConfig implements IotaConfig {
         boolean RESCAN_DB = false;
         String GRAPH_DB_PATH = "";
         boolean ENABLE_BATCH_TXNS = false;
-        boolean ENABLE_IPFS_TXNS = false;
+        boolean ENABLE_IPFS_TXNS = true;
         boolean ENABLE_COMPRESSION_TXNS = false;
 
         //Protocol

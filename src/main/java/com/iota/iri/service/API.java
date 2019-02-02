@@ -1338,10 +1338,10 @@ public class API {
     private synchronized AbstractResponse storeMessageStatement(final String address, final String message) throws Exception {
         final List<Hash> txToApprove = getTransactionToApproveTips(3, Optional.empty());
 
-        // parse count here
+        final int txMessageSize = (int) TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3;
 
         // decompression goes here
-        String msg = message;
+        String msgStr = message;
         if(BaseIotaConfig.getInstance().isEnableCompressionTxns()) {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             ByteArrayInputStream in = new ByteArrayInputStream(message.getBytes());
@@ -1352,10 +1352,27 @@ public class API {
                 out.write(buffer, 0, num);
             }
              byte[] unCompressed = out.toByteArray();
-             msg = new String(unCompressed);
+            msgStr = new String(unCompressed);
         }
 
-        final int txMessageSize = (int) TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3;
+        // parse count here
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode rootNode = objectMapper.readTree(msgStr);
+        JsonNode numNode = rootNode.path("tx_num");
+        JsonNode txsNode = rootNode.path("txn_content");
+        long txnCount = numNode.asLong();
+        String[] parts = txsNode.toString().split("}");
+        if (parts.length != txnCount) {
+            log.error("Wrong message - tx_num is {}, but txn_content have {} transactions", txnCount, parts.length);
+            return AbstractResponse.createEmptyResponse();
+        }
+        StringBuilder msgBuilder = new StringBuilder();
+        for (String part: parts) {
+            String s = StringUtils.rightPad(Converter.asciiToTrytes(part), txMessageSize, '9');
+            msgBuilder.append(s);
+        }
+        String msg = msgBuilder.toString();
+
 
         final int txCount = (int) (msg.length() + txMessageSize - 1) / txMessageSize;
 

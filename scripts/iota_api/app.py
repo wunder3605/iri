@@ -23,8 +23,8 @@ enable_compression = cf.getboolean("iota", "enableCompression")
 enable_batching = cf.getboolean("iota", "enableBatching")
 cache = IotaCache(iota_addr, iota_seed)
 
-if enable_batching == False and enable_compression == True:
-    print("Error configure -- compression can be enabled only when batching is enabled!", file=sys.stderr)
+if (enable_ipfs == True and enable_compression == True) or (enable_batching == False and enable_compression == True):
+    print("Error configure!", file=sys.stderr)
     sys.exit(-1)
 
 
