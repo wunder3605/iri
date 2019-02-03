@@ -14,6 +14,7 @@ import com.iota.iri.storage.Persistable;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.utils.Converter;
 import com.iota.iri.utils.Pair;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -522,19 +523,32 @@ public class TransactionViewModel {
         return "transaction " + hash.toString();
     }
 
+    private boolean addMilestoneTxnCount(Tangle tangle) {
+        // milestone
+        byte[] tritsSig = getSignature();
+        String trytesSig = Converter.trytes(tritsSig);
+        byte[] bytesSig = Converter.trytesToBytes(trytesSig);
+        String headerStr = new String((Arrays.copyOfRange(bytesSig, 0, 4)), StandardCharsets.US_ASCII);
+
+        if (headerStr.equals("\0\0\0\0")) {
+            tangle.addTxnCount(1);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     public long addBatchTxnCount(Tangle tangle) {
+        // milestone
+        if (addMilestoneTxnCount(tangle)) {
+            return 1;
+        }
+
         byte[] tritsSig = getSignature();
         String trytesSig = Converter.trytes(tritsSig);
 
         try {
             byte[] bytesSig = Converter.trytesToBytes(trytesSig);
-
-            // milestone
-            String headerStr = new String((Arrays.copyOfRange(bytesSig, 0, 4)), StandardCharsets.US_ASCII);
-            if (headerStr.equals("\0\0\0\0")) {
-                tangle.addTxnCount(1);
-                return 1;
-            }
 
             try {
                 ObjectMapper objectMapper = new ObjectMapper();
@@ -552,6 +566,28 @@ public class TransactionViewModel {
         } catch (Exception e) {
             e.printStackTrace();
             // json parse error.
+            return 0;
+        }
+    }
+
+    public long addCompressedTxnCount(Tangle tangle) {
+        if (addMilestoneTxnCount(tangle)) {
+            return 1;
+        }
+
+        byte[] trits = trits();
+        String trytes = Converter.trytes(trits);
+
+        try {
+            String s = Converter.trytesToAscii(trytes.substring(0, SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3));
+            int count = StringUtils.countMatches(s, "{");
+
+            tangle.addTxnCount(count);
+
+            return count;
+
+        } catch (Exception e) {
+            e.printStackTrace();
             return 0;
         }
     }

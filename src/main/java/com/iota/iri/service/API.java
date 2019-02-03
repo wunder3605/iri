@@ -708,8 +708,9 @@ public class API {
                 if (BaseIotaConfig.getInstance().isEnableBatchTxns()) {
                     if (BaseIotaConfig.getInstance().isEnableCompressionTxns()) {
                         // enable compression
-                        instance.tangle.addTxnCount(1);
-                        log.info("received batch of 1 transaction in messages from api.");
+                        /*instance.tangle.addTxnCount(1);*/
+                        long count = transactionViewModel.addCompressedTxnCount(instance.tangle);
+                        log.info("received batch of {} transaction in messages from api.", count);
                     } else {
                         // disable compression
                         long count = transactionViewModel.addBatchTxnCount(instance.tangle);
@@ -1460,23 +1461,29 @@ public class API {
                 return null;
             }
 
+            // String -> Trytes
             StringBuilder msgBuilder = new StringBuilder();
-            StringBuilder oneStr = new StringBuilder();
+            StringBuilder tempMsg = new StringBuilder();
             int size = TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3;
             for (String str: strs) {
-                // TODO: transaction number will not be correct.
                 String trytes = Converter.asciiToTrytes(str);
                 if (trytes == null) {
                     log.error("Convert ascii to trytes failed!");
                     return null;
                 }
-                if (oneStr.length() + trytes.length() > size) {
-                    String s = StringUtils.rightPad(trytes, size, '9');
+
+                if (tempMsg.length() + trytes.length() > size) {
+                    String s = StringUtils.rightPad(tempMsg.toString(), size, '9');
                     msgBuilder.append(s);
-                    oneStr = new StringBuilder(trytes);
+
+                    tempMsg = new StringBuilder(trytes);
                 } else {
-                    oneStr.append(trytes);
+                    tempMsg.append(trytes);
                 }
+            }
+            if (tempMsg.length() != 0) {
+                String s = StringUtils.rightPad(tempMsg.toString(), size, '9');
+                msgBuilder.append(s);
             }
 
             return msgBuilder.toString();
