@@ -706,8 +706,15 @@ public class API {
             if(transactionViewModel.store(instance.tangle)) {
                 // add batch of txns count.
                 if (BaseIotaConfig.getInstance().isEnableBatchTxns()) {
-                    long count = transactionViewModel.addBatchTxnCount(instance.tangle);
-                     log.info("received batch of {} transactions from api.", count);
+                    if (BaseIotaConfig.getInstance().isEnableCompressionTxns()) {
+                        // enable compression
+                        instance.tangle.addTxnCount(1);
+                        log.info("received batch of 1 transaction in messages from api.");
+                    } else {
+                        // disable compression
+                        long count = transactionViewModel.addBatchTxnCount(instance.tangle);
+                        log.info("received batch of {} transactions from api.", count);
+                    }
                 } else {
                     instance.tangle.addTxnCount(1);
                 }
@@ -1340,75 +1347,17 @@ public class API {
 
         final int txMessageSize = (int) TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3;
 
-        String msgStr = decompress(message);
-        
-        List<String> transactions;
-        if(BaseIotaConfig.getInstance().isEnableBatchTxns()) {
-            transactions = parseTransactions(msgStr,  address,  txMessageSize);
-        } else {
-            transactions = parseMessages(msgStr,  address,  txMessageSize);
-        }
-
-        if(transactions != null && !transactions.isEmpty()) {
-            // do pow
-            List<String> powResult = attachToTangleStatement(txToApprove.get(0), txToApprove.get(1), 9, transactions);
-            storeTransactionsStatement(powResult);
-            broadcastTransactionsStatement(powResult);
-        }
-
-        return AbstractResponse.createEmptyResponse();
-    }
-
-    private String decompress(final String message) {
-        // decompression goes here
-        String msgStr = message;
-        try {
-            if(BaseIotaConfig.getInstance().isEnableCompressionTxns()) {
-                byte[] bytes = Converter.trytesToBytes(message);
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                ByteArrayInputStream in = new ByteArrayInputStream(bytes);
-                GZIPInputStream inStream = new GZIPInputStream(in);          
-                byte[] buffer = new byte[16384];
-                int num = 0;
-                while ((num = inStream.read(buffer)) >= 0) {
-                    out.write(buffer, 0, num);
-                }
-                byte[] unCompressed = out.toByteArray();
-                msgStr = new String(unCompressed);
+        // special process
+        String msg = message;
+        boolean flag = true;    // TODO: flag need to be better.
+        if (flag) {
+            msg = special_msg_process(message, txMessageSize);
+            if (msg == null) {
+                log.error("Special process failed!");
+                return AbstractResponse.createEmptyResponse();
             }
-        } catch(IOException e) {
-            e.printStackTrace();
         }
-        return msgStr;
-    }
 
-    private List<String> parseTransactions(String msg, String address, int txMessageSize) {
-        // parse count here
-        List<String> ret = new ArrayList<>();
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode rootNode = objectMapper.readTree(msg);
-            JsonNode numNode = rootNode.path("tx_num");
-            JsonNode txsNode = rootNode.path("txn_content");
-            long txnCount = numNode.asLong();
-            StringBuilder msgBuilder = new StringBuilder();
-            int i = 0;
-            for (final JsonNode txNode : txsNode) {
-                String s = "";
-                msgBuilder.append(s);
-                i++;
-            }
-            if (i != txnCount) {
-                log.error("Wrong message - tx_num is {}, but txn_content have {} transactions", txnCount, i);
-                return null;
-            }
-        } catch(IOException e) {
-            e.printStackTrace();
-        }
-        return ret;
-    }
-
-    private List<String> parseMessages(String msg, String address, int txMessageSize) {
         final int txCount = (int) (msg.length() + txMessageSize - 1) / txMessageSize;
 
         final byte[] timestampTrits = new byte[TransactionViewModel.TIMESTAMP_TRINARY_SIZE];
@@ -1463,7 +1412,65 @@ public class API {
         final String bundleHash = Converter.trytes(essenceTrits, 0, essenceTrits.length);
 
         transactions = transactions.stream().map(tx -> StringUtils.rightPad(tx + bundleHash, TRYTES_SIZE, '9')).collect(Collectors.toList());
-        return transactions;
+
+        // do pow
+        List<String> powResult = attachToTangleStatement(txToApprove.get(0), txToApprove.get(1), 9, transactions);
+        broadcastTransactionsStatement(powResult);
+
+        // !!!! NEW ADDED
+        if (flag) {
+            storeTransactionsStatement(powResult);
+        }
+
+        return AbstractResponse.createEmptyResponse();
     }
 
+    private String special_msg_process(final String message) {
+        // decompression goes here
+        String msgStr = message;
+        if(BaseIotaConfig.getInstance().isEnableCompressionTxns()) {
+            try {
+                byte[] bytes = Converter.trytesToBytes(message);
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+                GZIPInputStream inStream = new GZIPInputStream(in);
+                byte[] buffer = new byte[16384];
+                int num = 0;
+                while ((num = inStream.read(buffer)) >= 0) {
+                    out.write(buffer, 0, num);
+                }
+                byte[] unCompressed = out.toByteArray();
+                msgStr = new String(unCompressed);
+            } catch (IOException e) {
+                log.error("Uncompressing error", e);
+                return null;
+            }
+        }
+
+        // parse json here
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode rootNode = objectMapper.readTree(msgStr);
+            JsonNode numNode = rootNode.path("tx_num");
+            JsonNode txsNode = rootNode.path("txn_content");
+            long txnCount = numNode.asLong();
+            String[] strs = txsNode.toString().split("BADBAD");
+            if (strs.length != txnCount) {
+                log.error("Wrong message - tx_num is {}, but txn_content have {} transactions", txnCount, strs.length);
+                return null;
+            }
+
+            StringBuilder msgBuilder = new StringBuilder();
+            for (String str: strs) {
+                String s = StringUtils.rightPad(Converter.asciiToTrytes(str), TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3, '9');
+                msgBuilder.append(s);
+            }
+
+            return msgBuilder.toString();
+
+        } catch (IOException e) {
+            log.error("Parse json error", e);
+            return null;
+        }
+    }
 }

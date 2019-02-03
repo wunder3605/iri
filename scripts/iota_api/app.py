@@ -36,7 +36,7 @@ def compress_str(data):
         with gzip.GzipFile(fileobj=out, mode="w") as f:
             f.write(data)
         compressed_data = out.getvalue()
-        return compressed_data
+        return TryteString.from_bytes(compressed_data).__str__()
     else:
         return data
 
@@ -49,7 +49,7 @@ def send(tx_string, tx_num=1):
 def send_to_ipfs_iota(tx_string, tx_num):
     global lock
     with lock:
-        filename = '/tmp/json'
+        filename = 'json'
         f = open(filename, 'w')
         f.write(tx_string)
         f.flush()
@@ -74,7 +74,7 @@ def send_to_iota(tx_string, tx_num):
         if enable_batching is False:
             cache.cache_txn_in_tangle_simple(data, TagGenerator.get_current_tag("TR"))
         else:
-            compressed_data = TryteString.from_bytes(compress_str(data)).__str__()
+            compressed_data = compress_str(data)
             cache.cache_txn_in_tangle_message(compressed_data)
 
         print("[INFO]Cache data in tangle, the tangle tag is %s." % (TagGenerator.get_current_tag("TR")), file=sys.stderr)
@@ -105,14 +105,16 @@ def get_cache():
         if nums == 0:
             return
 
-        all_txs = "["
+        #all_txs = "["
+        all_txs = ""
         for i in range(nums):
             tx = txn_cache.popleft()
+            #all_txs += tx
             if i == nums - 1:
                 all_txs += tx
             else:
-                all_txs += tx + ","
-        all_txs += "]"
+                all_txs += tx + "BADBAD"
+        #all_txs += "]"
         print("txs = \\", all_txs, "/", file=sys.stderr)
 
     send(all_txs, nums)

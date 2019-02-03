@@ -536,12 +536,19 @@ public class TransactionViewModel {
                 return 1;
             }
 
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode rootNode = objectMapper.readTree(bytesSig);
-            JsonNode idNode = rootNode.path("tx_num");
-            long txnCount = idNode.asLong();
-            tangle.addTxnCount(txnCount);
-            return txnCount;
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                JsonNode rootNode = objectMapper.readTree(bytesSig);
+                JsonNode idNode = rootNode.path("tx_num");
+                long txnCount = idNode.asLong();
+                tangle.addTxnCount(txnCount);
+                return txnCount;
+            } catch (Exception e) {
+                // put_file with ipfs and batch, not json format
+                //e.printStackTrace();
+                tangle.addTxnCount(1);
+                return 1;
+            }
         } catch (Exception e) {
             e.printStackTrace();
             // json parse error.
