@@ -1461,9 +1461,22 @@ public class API {
             }
 
             StringBuilder msgBuilder = new StringBuilder();
+            StringBuilder oneStr = new StringBuilder();
+            int size = TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3;
             for (String str: strs) {
-                String s = StringUtils.rightPad(Converter.asciiToTrytes(str), TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3, '9');
-                msgBuilder.append(s);
+                // TODO: transaction number will not be correct.
+                String trytes = Converter.asciiToTrytes(str);
+                if (trytes == null) {
+                    log.error("Convert ascii to trytes failed!");
+                    return null;
+                }
+                if (oneStr.length() + trytes.length() > size) {
+                    String s = StringUtils.rightPad(trytes, size, '9');
+                    msgBuilder.append(s);
+                    oneStr = new StringBuilder(trytes);
+                } else {
+                    oneStr.append(trytes);
+                }
             }
 
             return msgBuilder.toString();
