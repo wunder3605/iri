@@ -49,7 +49,7 @@ def send(tx_string, tx_num=1):
 def send_to_ipfs_iota(tx_string, tx_num):
     global lock
     with lock:
-        filename = '/tmp/json'
+        filename = 'json'
         f = open(filename, 'w')
         f.write(tx_string)
         f.flush()
