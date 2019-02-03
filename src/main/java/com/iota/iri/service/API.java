@@ -1351,7 +1351,7 @@ public class API {
         String msg = message;
         boolean flag = true;    // TODO: flag need to be better.
         if (flag) {
-            msg = special_msg_process(message, txMessageSize);
+            msg = specialMsgProcess(message);
             if (msg == null) {
                 log.error("Special process failed!");
                 return AbstractResponse.createEmptyResponse();
@@ -1425,7 +1425,7 @@ public class API {
         return AbstractResponse.createEmptyResponse();
     }
 
-    private String special_msg_process(final String message) {
+    private String specialMsgProcess(final String message) {
         // decompression goes here
         String msgStr = message;
         if(BaseIotaConfig.getInstance().isEnableCompressionTxns()) {
