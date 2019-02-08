@@ -70,7 +70,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.zip.GZIPInputStream;
 
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 
 @SuppressWarnings("unchecked")
 public class API {
@@ -111,6 +112,8 @@ public class API {
     private Iota instance;
     
     private final String[] features;
+
+    private boolean storeCliMsgFlag = false;
 
     public API(Iota instance, IXI ixi) {
         this.instance = instance;
@@ -238,9 +241,12 @@ public class API {
                         return ErrorResponse.create("Invalid params");
                     }
 
+                    storeCliMsgFlag = true;
                     String address = (String) request.get("address");
                     String message = (String) request.get("message");
-                    return storeMessageStatement(address, message);
+                    AbstractResponse rsp = storeMessageStatement(address, message);
+                    storeCliMsgFlag = false;
+                    return rsp;
                 }
 
                 case "addNeighbors": {
@@ -705,9 +711,14 @@ public class API {
             if(transactionViewModel.store(instance.tangle)) {
                 // add batch of txns count.
                 if (BaseIotaConfig.getInstance().isEnableBatchTxns()) {
-                    // disable compression
-                    long count = transactionViewModel.addBatchTxnCount(instance.tangle);
-                    log.info("received batch of {} transactions from api.", count);
+                    if (storeCliMsgFlag) {
+                        long count = transactionViewModel.addCompressedTxnCount(instance.tangle);
+                        log.info("received batch of {} transaction in messages from api.", count);
+                    } else {
+                        // disable compression
+                        long count = transactionViewModel.addBatchTxnCount(instance.tangle);
+                        log.info("received batch of {} transactions from api.", count);
+                    }
                 } else {
                     instance.tangle.addTxnCount(1);
                 }
@@ -1338,12 +1349,55 @@ public class API {
     private synchronized AbstractResponse storeMessageStatement(final String address, final String message) throws Exception {
         final List<Hash> txToApprove = getTransactionToApproveTips(3, Optional.empty());
 
+        final int txMessageSize = (int) TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3;
+
+        // special process
         String msg = message;
-        List<String> transactions;
-        if(BaseIotaConfig.getInstance().isEnableBatchTxns()) {
-            transactions = IotaIOUtils.processBatchTxnMsg(msg);
-        } else {
-            transactions = IotaIOUtils.processNornalMsg(address, msg);
+
+        if (storeCliMsgFlag) {
+            msg = specialMsgProcess(message);
+            if (msg == null) {
+                log.error("Special process failed!");
+                return AbstractResponse.createEmptyResponse();
+            }
+        }
+
+        final int txCount = (int) (msg.length() + txMessageSize - 1) / txMessageSize;
+
+        final byte[] timestampTrits = new byte[TransactionViewModel.TIMESTAMP_TRINARY_SIZE];
+        Converter.copyTrits(System.currentTimeMillis(), timestampTrits, 0, timestampTrits.length);
+        final String timestampTrytes = StringUtils.rightPad(Converter.trytes(timestampTrits), timestampTrits.length / 3, '9');
+
+        final byte[] lastIndexTrits = new byte[TransactionViewModel.LAST_INDEX_TRINARY_SIZE];
+        byte[] currentIndexTrits = new byte[TransactionViewModel.CURRENT_INDEX_TRINARY_SIZE];
+
+        Converter.copyTrits(txCount - 1, lastIndexTrits, 0, lastIndexTrits.length);
+        final String lastIndexTrytes = Converter.trytes(lastIndexTrits);
+
+        List<String> transactions = new ArrayList<>();
+        for (int i = 0; i < txCount; i++) {
+            String tx;
+            if (i != txCount - 1) {
+                tx = msg.substring(i * txMessageSize, (i + 1) * txMessageSize);
+            } else {
+                tx = msg.substring(i * txMessageSize);
+            }
+
+            Converter.copyTrits(i, currentIndexTrits, 0, currentIndexTrits.length);
+
+            tx = StringUtils.rightPad(tx, txMessageSize, '9');
+            tx += address.substring(0, 81);
+            // value
+            tx += StringUtils.repeat('9', 27);
+            // obsolete tag
+            tx += StringUtils.repeat('9', 27);
+            // timestamp
+            tx += timestampTrytes;
+            // current index
+            tx += StringUtils.rightPad(Converter.trytes(currentIndexTrits), currentIndexTrits.length / 3, '9');
+            // last index
+            tx += StringUtils.rightPad(lastIndexTrytes, lastIndexTrits.length / 3, '9');
+            transactions.add(tx);
         }
 
         // let's calculate the bundle essence :S
@@ -1367,8 +1421,78 @@ public class API {
         List<String> powResult = attachToTangleStatement(txToApprove.get(0), txToApprove.get(1), 9, transactions);
         broadcastTransactionsStatement(powResult);
 
-        storeTransactionsStatement(powResult);
+        if (storeCliMsgFlag) {
+            storeTransactionsStatement(powResult);
+        }
 
         return AbstractResponse.createEmptyResponse();
+    }
+
+    private String specialMsgProcess(final String message) {
+        // decompression goes here
+        String msgStr = message;
+        if(BaseIotaConfig.getInstance().isEnableCompressionTxns()) {
+            try {
+                byte[] bytes = Converter.trytesToBytes(message);
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+                GZIPInputStream inStream = new GZIPInputStream(in);
+                byte[] buffer = new byte[16384];
+                int num = 0;
+                while ((num = inStream.read(buffer)) >= 0) {
+                    out.write(buffer, 0, num);
+                }
+                byte[] unCompressed = out.toByteArray();
+                msgStr = new String(unCompressed);
+            } catch (IOException e) {
+                log.error("Uncompressing error", e);
+                return null;
+            }
+        }
+
+        // parse json here
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode rootNode = objectMapper.readTree(msgStr);
+            JsonNode numNode = rootNode.path("tx_num");
+            JsonNode txsNode = rootNode.path("txn_content");
+            long txnCount = numNode.asLong();
+            String[] strs = txsNode.toString().split("BADBAD");
+            if (strs.length != txnCount) {
+                log.error("Wrong message - tx_num is {}, but txn_content have {} transactions", txnCount, strs.length);
+                return null;
+            }
+
+            // String -> Trytes
+            StringBuilder msgBuilder = new StringBuilder();
+            StringBuilder tempMsg = new StringBuilder();
+            int size = TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3;
+            for (String str: strs) {
+                String trytes = Converter.asciiToTrytes(str);
+                if (trytes == null) {
+                    log.error("Convert ascii to trytes failed!");
+                    return null;
+                }
+
+                if (tempMsg.length() + trytes.length() > size) {
+                    String s = StringUtils.rightPad(tempMsg.toString(), size, '9');
+                    msgBuilder.append(s);
+
+                    tempMsg = new StringBuilder(trytes);
+                } else {
+                    tempMsg.append(trytes);
+                }
+            }
+            if (tempMsg.length() != 0) {
+                String s = StringUtils.rightPad(tempMsg.toString(), size, '9');
+                msgBuilder.append(s);
+            }
+
+            return msgBuilder.toString();
+
+        } catch (IOException e) {
+            log.error("Parse json error", e);
+            return null;
+        }
     }
 }
