@@ -1355,7 +1355,7 @@ public class API {
         String msg = message;
 
         if (storeCliMsgFlag) {
-            msg = specialMsgProcess(message);
+            msg = IotaIOUtils.processBatchTxnMsg(message);
             if (msg == null) {
                 log.error("Special process failed!");
                 return AbstractResponse.createEmptyResponse();
@@ -1426,73 +1426,5 @@ public class API {
         }
 
         return AbstractResponse.createEmptyResponse();
-    }
-
-    private String specialMsgProcess(final String message) {
-        // decompression goes here
-        String msgStr = message;
-        if(BaseIotaConfig.getInstance().isEnableCompressionTxns()) {
-            try {
-                byte[] bytes = Converter.trytesToBytes(message);
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                ByteArrayInputStream in = new ByteArrayInputStream(bytes);
-                GZIPInputStream inStream = new GZIPInputStream(in);
-                byte[] buffer = new byte[16384];
-                int num = 0;
-                while ((num = inStream.read(buffer)) >= 0) {
-                    out.write(buffer, 0, num);
-                }
-                byte[] unCompressed = out.toByteArray();
-                msgStr = new String(unCompressed);
-            } catch (IOException e) {
-                log.error("Uncompressing error", e);
-                return null;
-            }
-        }
-
-        // parse json here
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode rootNode = objectMapper.readTree(msgStr);
-            JsonNode numNode = rootNode.path("tx_num");
-            JsonNode txsNode = rootNode.path("txn_content");
-            long txnCount = numNode.asLong();
-            String[] strs = txsNode.toString().split("BADBAD");
-            if (strs.length != txnCount) {
-                log.error("Wrong message - tx_num is {}, but txn_content have {} transactions", txnCount, strs.length);
-                return null;
-            }
-
-            // String -> Trytes
-            StringBuilder msgBuilder = new StringBuilder();
-            StringBuilder tempMsg = new StringBuilder();
-            int size = TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3;
-            for (String str: strs) {
-                String trytes = Converter.asciiToTrytes(str);
-                if (trytes == null) {
-                    log.error("Convert ascii to trytes failed!");
-                    return null;
-                }
-
-                if (tempMsg.length() + trytes.length() > size) {
-                    String s = StringUtils.rightPad(tempMsg.toString(), size, '9');
-                    msgBuilder.append(s);
-
-                    tempMsg = new StringBuilder(trytes);
-                } else {
-                    tempMsg.append(trytes);
-                }
-            }
-            if (tempMsg.length() != 0) {
-                String s = StringUtils.rightPad(tempMsg.toString(), size, '9');
-                msgBuilder.append(s);
-            }
-
-            return msgBuilder.toString();
-
-        } catch (IOException e) {
-            log.error("Parse json error", e);
-            return null;
-        }
     }
 }
