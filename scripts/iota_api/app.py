@@ -99,7 +99,7 @@ def get_cache():
     with cache_lock:
         if len(txn_cache) == 0:
             return
-        all_txs = txn_cache 
+        all_txs = ", ".join(txn_cache)
         send(all_txs, len(txn_cache))
         txn_cache[:] = []
 
