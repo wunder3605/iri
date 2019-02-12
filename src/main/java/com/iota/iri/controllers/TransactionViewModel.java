@@ -551,6 +551,7 @@ public class TransactionViewModel {
             byte[] bytesSig = Converter.trytesToBytes(trytesSig);
 
             try {
+                
                 ObjectMapper objectMapper = new ObjectMapper();
                 JsonNode rootNode = objectMapper.readTree(bytesSig);
                 JsonNode idNode = rootNode.path("tx_num");
@@ -575,16 +576,25 @@ public class TransactionViewModel {
             return 1;
         }
 
-        byte[] trits = trits();
+        byte[] trits = getSignature();
         String trytes = Converter.trytes(trits);
 
         try {
-            String s = Converter.trytesToAscii(trytes.substring(0, SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3));
-            int count = StringUtils.countMatches(s, "{");
-
-            tangle.addTxnCount(count);
-
-            return count;
+            String s = Converter.trytesToAscii(trytes);
+            try {
+                
+                ObjectMapper objectMapper = new ObjectMapper();
+                JsonNode rootNode = objectMapper.readTree(s);
+                JsonNode idNode = rootNode.path("tx_num");
+                long txnCount = idNode.asLong();
+                tangle.addTxnCount(txnCount);
+                return txnCount;
+            } catch (Exception e) {
+                // put_file with ipfs and batch, not json format
+                //e.printStackTrace();
+                tangle.addTxnCount(1);
+                return 1;
+            }
 
         } catch (Exception e) {
             e.printStackTrace();

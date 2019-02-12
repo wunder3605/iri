@@ -65,14 +65,15 @@ public class IotaIOUtils extends IOUtils {
             JsonNode txsNode = rootNode.path("txn_content");
             long txnCount = numNode.asLong();
 
-            int size = TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3;
+            int size = (int)TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3;
             if(txsNode.isArray()) {
                 BatchTxns tmpBatch = new BatchTxns();
                 for (final JsonNode txn : txsNode) {
                     TransactionData.getInstance().readFromStr(txn.toString().replace("\\", "").replace("\"{", "{").replace("}\"", "}"));
                     tmpBatch.addTxn(TransactionData.getInstance().getLast());
-                    if(tmpBatch.getTryteStringLen(tmpBatch) > size) {
+                    if(tmpBatch.getTryteStringLen(tmpBatch) + 200 > size) {
                         String s = StringUtils.rightPad(tmpBatch.getTryteString(tmpBatch), size, '9');
+                        log.info("[zhaoming"+size+"] "+s);
                         ret += s;
                         tmpBatch.clear();
                     }
