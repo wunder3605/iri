@@ -712,8 +712,8 @@ public class API {
                 // add batch of txns count.
                 if (BaseIotaConfig.getInstance().isEnableBatchTxns()) {
                     if (storeCliMsgFlag) {
-                        long count = transactionViewModel.addCompressedTxnCount(instance.tangle);
-                        log.info("received batch of {} transaction in messages from api.", count);
+                        //long count = transactionViewModel.addCompressedTxnCount(instance.tangle);
+                        //log.info("received batch of {} transaction in messages from api.", count);
                     } else {
                         // disable compression
                         long count = transactionViewModel.addBatchTxnCount(instance.tangle);
@@ -1354,8 +1354,11 @@ public class API {
         // special process
         String msg = message;
 
+        long txnNum = 0;
         if (storeCliMsgFlag) {
-            msg = IotaIOUtils.processBatchTxnMsg(message);
+            String processed = IotaIOUtils.processBatchTxnMsg(message);
+            msg = processed.split(",")[0];
+            txnNum = Long.valueOf(processed.split(",")[1]);
             if (msg == null) {
                 log.error("Special process failed!");
                 return AbstractResponse.createEmptyResponse();
@@ -1423,6 +1426,8 @@ public class API {
 
         if (storeCliMsgFlag) {
             storeTransactionsStatement(powResult);
+            instance.tangle.addTxnCount(txnNum);
+            log.info("received batch of {} transaction in messages from api.", txnNum);
         }
 
         return AbstractResponse.createEmptyResponse();
