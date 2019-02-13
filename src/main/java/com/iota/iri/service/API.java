@@ -1357,12 +1357,11 @@ public class API {
         long txnNum = 0;
         if (storeCliMsgFlag) {
             String processed = IotaIOUtils.processBatchTxnMsg(message);
-            msg = processed.split(",")[0];
-            txnNum = Long.valueOf(processed.split(",")[1]);
-            if (msg == null) {
+            if (processed == null) {
                 log.error("Special process failed!");
                 return AbstractResponse.createEmptyResponse();
             }
+            msg = processed;
         }
 
         final int txCount = (int) (msg.length() + txMessageSize - 1) / txMessageSize;

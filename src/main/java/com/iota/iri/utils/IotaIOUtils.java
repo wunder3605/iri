@@ -65,6 +65,11 @@ public class IotaIOUtils extends IOUtils {
             long txnCount = jo.getLong("tx_num");
             JSONArray array = jo.getJSONArray("txn_content");
 
+            if (array.size() != txnCount) {
+                log.error("Wrong input - tx_num is {}, but txn_content have {} items!", txnCount, array.size());
+                return null;
+            }
+
             BatchTxns tmpBatch = new BatchTxns();
 
             int size = (int)TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3;
@@ -84,7 +89,6 @@ public class IotaIOUtils extends IOUtils {
                 tmpBatch.clear();
             }
 
-            ret.append(",").append(txnCount);
             return ret.toString();
         } catch (Exception e) {
             e.printStackTrace();
