@@ -712,8 +712,8 @@ public class API {
                 // add batch of txns count.
                 if (BaseIotaConfig.getInstance().isEnableBatchTxns()) {
                     if (storeCliMsgFlag) {
-                        //long count = transactionViewModel.addCompressedTxnCount(instance.tangle);
-                        //log.info("received batch of {} transaction in messages from api.", count);
+                        long count = transactionViewModel.addCompressedTxnCount(instance.tangle);
+                        log.info("received batch of {} transaction in messages.", count);
                     } else {
                         // disable compression
                         long count = transactionViewModel.addBatchTxnCount(instance.tangle);
@@ -1426,8 +1426,6 @@ public class API {
 
         if (storeCliMsgFlag) {
             storeTransactionsStatement(powResult);
-            instance.tangle.addTxnCount(txnNum);
-            log.info("received batch of {} transaction in messages from api.", txnNum);
         }
 
         return AbstractResponse.createEmptyResponse();

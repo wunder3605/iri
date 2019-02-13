@@ -99,7 +99,8 @@ def get_cache():
     with cache_lock:
         if len(txn_cache) == 0:
             return
-        all_txs = ", ".join(txn_cache)
+
+        all_txs = json.dumps(txn_cache)
         send(all_txs, len(txn_cache))
         txn_cache[:] = []
 
@@ -132,7 +133,7 @@ def put_cache():
     if req_json is None:
         return 'error'
 
-    req_json["timestamp"] = str(time.time())
+    #req_json["timestamp"] = str(time.time())
 
     tx_string = json.dumps(req_json, sort_keys=True)
 
