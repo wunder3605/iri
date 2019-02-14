@@ -113,7 +113,7 @@ public class API {
     
     private final String[] features;
 
-    private boolean storeCliMsgFlag = false;
+    private boolean isMessage = false;
 
     public API(Iota instance, IXI ixi) {
         this.instance = instance;
@@ -241,11 +241,11 @@ public class API {
                         return ErrorResponse.create("Invalid params");
                     }
 
-                    storeCliMsgFlag = true;
+                    isMessage = true;
                     String address = (String) request.get("address");
                     String message = (String) request.get("message");
                     AbstractResponse rsp = storeMessageStatement(address, message);
-                    storeCliMsgFlag = false;
+                    isMessage = false;
                     return rsp;
                 }
 
@@ -709,19 +709,8 @@ public class API {
                     instance.transactionValidator.getMinWeightMagnitude());
 
             if(transactionViewModel.store(instance.tangle)) {
-                // add batch of txns count.
-                if (BaseIotaConfig.getInstance().isEnableBatchTxns()) {
-                    if (storeCliMsgFlag) {
-                        long count = transactionViewModel.addCompressedTxnCount(instance.tangle);
-                        log.info("received batch of {} transaction in messages.", count);
-                    } else {
-                        // disable compression
-                        long count = transactionViewModel.addBatchTxnCount(instance.tangle);
-                        log.info("received batch of {} transactions from api.", count);
-                    }
-                } else {
-                    instance.tangle.addTxnCount(1);
-                }
+                long count = transactionViewModel.addTxnCount(instance.tangle, isMessage);
+                log.info("received {} transactions.", count);
 
                 transactionViewModel.setArrivalTime(System.currentTimeMillis() / 1000L);
                 instance.transactionValidator.updateStatus(transactionViewModel);
@@ -1354,8 +1343,7 @@ public class API {
         // special process
         String msg = message;
 
-        long txnNum = 0;
-        if (storeCliMsgFlag) {
+        if (isMessage) {
             String processed = IotaIOUtils.processBatchTxnMsg(message);
             if (processed == null) {
                 log.error("Special process failed!");
@@ -1423,7 +1411,7 @@ public class API {
         List<String> powResult = attachToTangleStatement(txToApprove.get(0), txToApprove.get(1), 9, transactions);
         broadcastTransactionsStatement(powResult);
 
-        if (storeCliMsgFlag) {
+        if (isMessage) {
             storeTransactionsStatement(powResult);
         }
 
