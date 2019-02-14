@@ -569,6 +569,7 @@ public class TransactionViewModel {
                     return 1;
                 }
             } catch (IllegalArgumentException e) {
+                // convert failed, tx content is illegal.
                 e.printStackTrace();
                 return 0;
             }
