@@ -24,7 +24,7 @@ enable_batching = cf.getboolean("iota", "enableBatching")
 cache = IotaCache(iota_addr, iota_seed)
 
 # txs buffer. dequeue is thread-safe
-txn_cache = []
+txn_cache = deque()
 TIMER_INTERVAL = 20
 BATCH_SIZE = 20
 COMPRESSED_SIZE = 7
@@ -97,12 +97,18 @@ def get_cache():
 
     global cache_lock
     with cache_lock:
-        if len(txn_cache) == 0:
+        nums = min(len(txn_cache), BATCH_SIZE)
+        if nums == 0:
             return
 
-        all_txs = json.dumps(txn_cache)
-        send(all_txs, len(txn_cache))
-        txn_cache[:] = []
+        list = []
+        for i in range(nums):
+            tx = txn_cache.popleft()
+            list.append(tx)
+
+    all_txs = json.dumps(list)
+    send(all_txs, nums)
+
 
 app = Flask(__name__)
 
