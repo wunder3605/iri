@@ -564,7 +564,7 @@ public class TransactionViewModel {
                     tangle.addTxnCount(txnCount);
                     return txnCount;
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    // transaction's format is not json,
                     tangle.addTxnCount(1);
                     return 1;
                 }
@@ -573,7 +573,7 @@ public class TransactionViewModel {
                 return 0;
             }
         } else {
-            // transaction from 'put_file'
+            // transaction not in batch, means 'put_file'
             tangle.addTxnCount(1);
             return 1;
         }

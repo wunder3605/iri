@@ -142,7 +142,8 @@ def put_cache():
 
     if len(txn_cache) >= BATCH_SIZE:
         # ring-buffer is full, send to ipfs and iota directly.
-        get_cache()
+        t = threading.Thread(target=get_cache)
+        t.start()
 
     return 'ok'
 
