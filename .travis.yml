@@ -59,7 +59,7 @@ script:
   - git fetch origin $TRAVIS_BRANCH
   - git checkout -f $TRAVIS_BRANCH
   - git checkout $build_head
-  - git merge $TRAVIS_BRANCH
+  #- git merge $TRAVIS_BRANCH
   - mvn integration-test -Dlogging-level=INFO
   #run jar sanity tests
   - VERSION=$(mvn help:evaluate -Dexpression=project.version | grep -E '^[0-9.]+')
