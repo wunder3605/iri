@@ -101,12 +101,12 @@ def get_cache():
         if nums == 0:
             return
 
-        list = []
+        tx_list = []
         for i in range(nums):
             tx = txn_cache.popleft()
-            list.append(tx)
+            tx_list.append(tx)
 
-    all_txs = json.dumps(list)
+    all_txs = json.dumps(tx_list)
     send(all_txs, nums)
 
 
