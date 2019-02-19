@@ -1074,14 +1074,6 @@ public class API {
         }
     }
 
-    private AbstractResponse getStreamNetBalanceStatement(final List<String> addresses) {
-        log.info("[StreamNet] balance is: \n" + TransactionData.getInstance().getData());
-        log.info("[StreamNet] graph is: \n");
-        LocalInMemoryGraphProvider prov = (LocalInMemoryGraphProvider)instance.tangle.getPersistenceProvider("LOCAL_GRAPH");
-        prov.printGraph(prov.graph, null);
-        return GetBalancesResponse.create(null, null, 0);
-    }
-
     /**
       * Returns the confirmed balance, as viewed by the specified <code>tips</code>. If you do not specify the referencing <code>tips</code>, the returned balance is based on the latest confirmed milestone.
       * In addition to the balances, it also returns the referencing <code>tips</code> (or milestone), as well as the index with which the confirmed balance was determined.
