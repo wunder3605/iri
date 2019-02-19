@@ -129,14 +129,10 @@ def put_file():
     if req_json is None:
         return 'error'
 
-<<<<<<< HEAD
-    send(json.dumps(req_json, sort_keys=True))
-=======
     if not req_json.has_key(u'tag'):
         send(json.dumps(req_json, sort_keys=True))
     else:
         send(json.dumps(req_json, sort_keys=True), tag=req_json[u'tag'])
->>>>>>> origin/conflux_storage_utxo
 
     return 'ok'
 
