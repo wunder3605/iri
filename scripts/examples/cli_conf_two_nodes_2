@@ -1,14 +1,11 @@
 [iota]
 addr = http://localhost:14700
 seed = EBZYNR9YVFIOAZUPQOLRZXPPPIKRCJ9EJKVCXMYVLMNOCCOPYPJKCWUZNLJZZZZWTMVQUXZFYLVLZXJ9Q
-enableIpfs = True
-enableBatching = False
+enableIpfs = False 
+enableBatching = True 
 enableCompression = False
-<<<<<<< HEAD
-=======
-listenPort = 5000
+listenPort = 6000
 listenAddress = 0.0.0.0
->>>>>>> c754857... [fix #138] Document for how to deploy streamnet and related services
 
 [tendermint]
 addr = http://localhost:26657
