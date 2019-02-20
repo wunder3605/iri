@@ -180,9 +180,9 @@ kubectl get nodes
 
 步骤22.验证集群功能。
 
-``` 
- kubectl run nginx-deploy --image=nginx:1.14-alpine --port=80 --replicas=2
-```  
+```
+ kubectl run nginx-deploy --image=nginx:1.14-alpine --port=80 --replicas=2;
+```
 
 ps:步骤1-7,11-13是在所有节点上执行，
    步骤8-10，14-19，21-22在master节点执行
