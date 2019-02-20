@@ -20,6 +20,11 @@ iota_seed = cf.get("iota", "seed")
 enable_ipfs = cf.getboolean("iota", "enableIpfs")
 enable_compression = cf.getboolean("iota", "enableCompression")
 enable_batching = cf.getboolean("iota", "enableBatching")
+<<<<<<< HEAD
+=======
+listen_port = cf.get("iota", "listenPort")
+listen_address = cf.get("iota", "listenAddress")
+>>>>>>> c754857... [fix #138] Document for how to deploy streamnet and related services
 cache = IotaCache(iota_addr, iota_seed)
 
 # txs buffer. dequeue is thread-safe
@@ -195,4 +200,8 @@ def put_action():
 
 if __name__ == '__main__':
     get_cache()
+<<<<<<< HEAD
     app.run()
+=======
+    app.run(host=listen_address, port=listen_port)
+>>>>>>> c754857... [fix #138] Document for how to deploy streamnet and related services
