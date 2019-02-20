@@ -24,7 +24,7 @@ public class RocksDBPersistenceProviderTest {
     private static String dbPath = "tmpdb", dbLogPath = "tmplogs";
 
     @BeforeClass
-    public static void setUpDb() {
+    public static void setUpDb() throws Exception {
         rocksDBPersistenceProvider =  new RocksDBPersistenceProvider(
                dbPath, dbLogPath,1000, Tangle.COLUMN_FAMILIES, Tangle.METADATA_COLUMN_FAMILY);
         rocksDBPersistenceProvider.init();
