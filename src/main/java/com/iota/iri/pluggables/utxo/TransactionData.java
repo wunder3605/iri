@@ -23,14 +23,10 @@ import com.iota.iri.utils.IotaUtils;
 public class TransactionData {
 
     Tangle tangle;
-    List<Transaction> transactions;
     List<Txn> transactions;
     HashMap<Hash, Hash> txnToTangleMap;
     HashMap<Hash, HashSet<Txn>> tangleToTxnMap;
     List<List<Txn>> tmpStorage;
-    List<Txn> transactions;
-    HashMap<Hash, Hash> txnToTangleMap;
-    HashMap<Hash, HashSet<Txn>> tangleToTxnMap;
 
     private static TransactionData txnData = new TransactionData();
 
@@ -49,8 +45,6 @@ public class TransactionData {
         txnToTangleMap = new HashMap<Hash, Hash>();
         tangleToTxnMap = new HashMap<Hash, HashSet<Txn>>();
         tmpStorage = new ArrayList<>();
-        txnToTangleMap = new HashMap<Hash, Hash>();
-        tangleToTxnMap = new HashMap<Hash, HashSet<Txn>>();
         init();
     }
 
@@ -94,7 +88,6 @@ public class TransactionData {
         }
         tmpStorage.clear();
     }
-
 
     public void putIndex(Txn tx, Hash blockHash) {
         txnToTangleMap.put(tx.txnHash, blockHash);

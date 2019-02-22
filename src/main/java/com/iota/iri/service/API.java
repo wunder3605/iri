@@ -112,7 +112,7 @@ public class API {
     private final static char ZERO_LENGTH_ALLOWED = 'Y';
     private final static char ZERO_LENGTH_NOT_ALLOWED = 'N';
     private Iota instance;
-    
+
     private final String[] features;
 
     public API(Iota instance, IXI ixi) {
@@ -243,8 +243,7 @@ public class API {
 
                     String address = (String) request.get("address");
                     String message = (String) request.get("message");
-                    AbstractResponse rsp = storeMessageStatement(address, message);
-                    isMessage = false;
+
                     String tag = "TX"; // by default is TX
                     if(request.containsKey("tag")) {
                         tag = (String) request.get("tag");
@@ -740,7 +739,7 @@ public class API {
                     String msg = Converter.trytes(branch.getSignature());
                     log.info("execute contract: {}", msg);
                     executeContract(msg, branchTagVal);
-                }    
+                }
 
                 // execute trunk
                 TransactionViewModel trunk = transactionViewModel.getTrunkTransaction(instance.tangle);
@@ -749,7 +748,7 @@ public class API {
                     String msg = Converter.trytes(trunk.getSignature());
                     log.info("execute contract: {}", msg);
                     executeContract(msg, trunkTagVal);
-                }    
+                }
             }
         }
         TransactionData.getInstance().batchPutIndex(hashes);
@@ -760,7 +759,7 @@ public class API {
             URL url = new URL("http://localhost:5000/put_contract");
             if(tagVal.equals("KB")) {
                 url = new URL("http://localhost:5000/put_action");
-            }    
+            }
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setDoOutput(true);
             conn.setRequestMethod("PUT");
