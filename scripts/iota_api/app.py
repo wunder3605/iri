@@ -46,13 +46,13 @@ def compress_str(data):
     else:
         return data
 
-def send(tx_string, tx_num=1):
+def send(tx_string, tx_num=1,tag='TR'):
     if enable_ipfs == True:
-        send_to_ipfs_iota(tx_string, tx_num)
+        send_to_ipfs_iota(tx_string, tx_num, tag)
     else:
-        send_to_iota(tx_string, tx_num)
+        send_to_iota(tx_string, tx_num,tag)
 
-def send_to_ipfs_iota(tx_string, tx_num):
+def send_to_ipfs_iota(tx_string, tx_num, tag):
     global lock
     with lock:
         filename = 'json'
@@ -69,10 +69,10 @@ def send_to_ipfs_iota(tx_string, tx_num):
         else:
             data = json.dumps({"address": ipfs_hash, "tx_num": tx_num}, sort_keys=True)
 
-        cache.cache_txn_in_tangle_simple(data, TagGenerator.get_current_tag("TR"))
+        cache.cache_txn_in_tangle_simple(data, TagGenerator.get_current_tag(tag))
         print("[INFO]Cache hash %s in tangle, the tangle tag is %s." % (ipfs_hash, TagGenerator.get_current_tag("TR")), file=sys.stderr)
 
-def send_to_iota(tx_string, tx_num):
+def send_to_iota(tx_string, tx_num, tag):
     global lock
     with lock:
         data = json.dumps({"txn_content": tx_string, "tx_num": tx_num}, sort_keys=True)
@@ -81,7 +81,7 @@ def send_to_iota(tx_string, tx_num):
             cache.cache_txn_in_tangle_simple(data, TagGenerator.get_current_tag("TR"))
         else:
             compressed_data = compress_str(data)
-            cache.cache_txn_in_tangle_message(compressed_data)
+            cache.cache_txn_in_tangle_message(compressed_data, TagGenerator.get_current_tag(tag))
 
         print("[INFO]Cache data in tangle, the tangle tag is %s." % (TagGenerator.get_current_tag("TR")), file=sys.stderr)
 
