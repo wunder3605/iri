@@ -2,6 +2,7 @@ package com.iota.iri.pluggables.utxo;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 import com.iota.iri.model.HashFactory;
@@ -14,6 +15,10 @@ public class TransactionData {
 
     Tangle tangle;
     List<Transaction> transactions;
+    List<Txn> transactions;
+    HashMap<Hash, Hash> txnToTangleMap;
+    HashMap<Hash, HashSet<Txn>> tangleToTxnMap;
+    List<List<Txn>> tmpStorage;
 
     private static TransactionData txnData;
 
@@ -36,6 +41,10 @@ public class TransactionData {
 
     public TransactionData() {
         //empty constructor
+        txnToTangleMap = new HashMap<Hash, Hash>();
+        tangleToTxnMap = new HashMap<Hash, HashSet<Txn>>();
+        tmpStorage = new ArrayList<>();
+        init();
     }
 
     static class RawTxn {
@@ -54,6 +63,92 @@ public class TransactionData {
         public void setAmnt(long amnt) {
             this.amnt = amnt;
         }
+
+        public String toString() {
+            return from + ":" + to + ":" +amnt+"\n";
+        }
+    }
+
+    public void createTmpStorageForBlock(BatchTxns tmpBatch){
+        List<Txn> newList = tmpBatch.txn_content.stream().collect(Collectors.toList());
+        tmpStorage.add(newList);
+    }
+
+    public void batchPutIndex(List<Hash> hashList) {
+        if(hashList.size() != tmpStorage.size() || hashList.size() <= 1) {
+            return;
+        }
+        int i=hashList.size()-1;
+        for(Hash h : hashList) {
+            for (Txn t : tmpStorage.get(i)) {
+                putIndex(t, h);
+            }
+            i--;
+        }
+        tmpStorage.clear();
+    }
+
+    public void putIndex(Txn tx, Hash blockHash) {
+        txnToTangleMap.put(tx.txnHash, blockHash);
+        if(tangleToTxnMap.get(blockHash) != null) {
+            HashSet<Txn> s = tangleToTxnMap.get(blockHash);
+            s.add(tx);
+            tangleToTxnMap.put(blockHash, s);
+        } else {
+            HashSet<Txn> s = new HashSet<Txn>();
+            s.add(tx);
+            tangleToTxnMap.put(blockHash, s);
+        }
+    }
+
+    public String getData() {
+        String ret = "";
+        if(checkConsistency()) {
+            for(Hash h : tangleToTxnMap.keySet()) {
+                ret += IotaUtils.abbrieviateHash(h, 4) + " : ";
+                BatchTxns btx = new BatchTxns();
+                for(Txn tx : tangleToTxnMap.get(h)) {
+                    btx.addTxn(tx);
+                }
+                ret += btx.getString(btx) + "\n";
+            }
+        }
+        return ret;
+    }
+
+    public boolean checkConsistency() {
+        try {
+            // forward check
+            for(Hash h : tangleToTxnMap.keySet()) {
+                TransactionViewModel model = TransactionViewModel.find(tangle, h.bytes());
+                String sig = Converter.trytes(model.getSignature());
+                String txnsStr = Converter.trytesToAscii(sig);
+
+                JSONObject jo = new JSONObject(txnsStr);
+
+                JSONArray jsonArray = (JSONArray) jo.get("txn_content");
+
+                for(Txn t : tangleToTxnMap.get(h)) {
+                    boolean found = false;
+                    for (Object object : jsonArray) {
+                        JSONObject jo1 = new JSONObject(object.toString());
+                        JSONObject jo2 = new JSONObject(JSON.toJSONString(t));
+                        if(jo1.toString().equals(jo2.toString())) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if(!found) {
+                        return false;
+                    }
+                }
+            }
+            // TODO backward check
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }  
     }
 
     public void readFromStr(String txnsStr){
