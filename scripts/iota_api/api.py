@@ -82,6 +82,18 @@ def storeMessage(url, address, message):
     cmd = {
         "command": "storeMessage",
         "address": address,
+<<<<<<< HEAD
         "message": message
+=======
+        "message": message,
+        "tag": tag
+    }
+    return API(cmd, url)
+
+def getBalance(url, address, coinType):
+    cmd = {
+        "command": "getBalances",
+        "cointype": coinType
+>>>>>>> 23e6f62... Update api.py
     }
     return API(cmd, url)
