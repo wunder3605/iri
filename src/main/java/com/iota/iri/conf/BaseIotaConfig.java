@@ -109,7 +109,7 @@ public abstract class BaseIotaConfig implements IotaConfig {
     private static BaseIotaConfig config;
 
     // TODO make this thread safe
-    public static void setInstance(BaseIotaConfig cfg) 
+    public static void setInstance(BaseIotaConfig cfg)
     {
         if (config == null)
         {
@@ -121,7 +121,7 @@ public abstract class BaseIotaConfig implements IotaConfig {
         {
             config = new TestnetConfig();
         }
-        return config; 
+        return config;
     }
 
     public BaseIotaConfig() {
@@ -415,7 +415,7 @@ public abstract class BaseIotaConfig implements IotaConfig {
     }
 
     @JsonProperty
-    @Parameter(names = {"--graph-db-path"}, description = DbConfig.Descriptions.GRAPH_DB_PATH)
+    @Parameter(names = {"--graph-db-path"}, description = DbConfig.Descriptions.GRAPH_DB_PATH, arity = 1)
     protected void setGraphDbPath(String graphDbPath) {
         this.graphDbPath = graphDbPath;
     }
@@ -787,7 +787,7 @@ public abstract class BaseIotaConfig implements IotaConfig {
     public int getBelowMaxDepthTransactionLimit() {
         return maxAnalyzedTransactions;
     }
-    
+
     @JsonProperty
     @Parameter(names = "--max-analyzed-transactions", description = TipSelConfig.Descriptions.BELOW_MAX_DEPTH_TRANSACTION_LIMIT)
     protected void setBelowMaxDepthTransactionLimit(int maxAnalyzedTransactions) {

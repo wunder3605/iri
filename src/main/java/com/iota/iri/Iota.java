@@ -165,15 +165,19 @@ public class Iota {
                 throw new NotImplementedException("No such database type.");
             }
         }
+
         if (configuration.isZmqEnabled()) {
             tangle.addPersistenceProvider(new ZmqPublishProvider(messageQ));
         }
+
         if(BaseIotaConfig.getInstance().getStreamingGraphSupport()) {
             tangle.addPersistenceProvider(new LocalInMemoryGraphProvider("", tangle));
         }
-        if(!BaseIotaConfig.getInstance().getGraphDbPath().equals("")) {
-            String graphDbPath = BaseIotaConfig.getInstance().getGraphDbPath();
-            tangle.addPersistenceProvider(new Neo4jPersistenceProvider(graphDbPath));
+
+        String graphDbPath = BaseIotaConfig.getInstance().getGraphDbPath();
+        if(!graphDbPath.equals("")) {
+            tangle.addPersistenceProvider(new Neo4jPersistenceProvider(graphDbPath, Tangle.COLUMN_FAMILIES,
+                    Tangle.METADATA_COLUMN_FAMILY));
         }
     }
 
