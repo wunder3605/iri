@@ -105,6 +105,7 @@ public class Iota {
         udpReceiver.init();
         replicator.init();
         node.init();
+        TransactionData.getInstance().restoreTxs();
     }
 
     private void rescanDb() throws Exception {
