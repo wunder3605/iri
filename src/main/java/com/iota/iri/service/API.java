@@ -31,6 +31,8 @@ import com.iota.iri.utils.IotaUtils;
 import com.iota.iri.utils.MapIdentityManager;
 import com.iota.iri.validator.BundleValidator;
 import com.iota.iri.validator.Snapshot;
+import com.iota.iri.pluggables.tee.BatchTee;
+import com.iota.iri.pluggables.tee.TEE;
 import io.undertow.Undertow;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.AuthenticationMode;
@@ -61,6 +63,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import com.google.gson.Gson;
+import com.google.gson.stream.JsonReader;
 
 import static io.undertow.Handlers.path;
 
@@ -717,11 +722,13 @@ public class API {
       **/
     public void storeTransactionsStatement(final List<String> trytes) throws Exception {
         byte[] txTrits = Converter.allocateTritsForTrytes(TRYTES_SIZE);
+        List<Hash> hashes = new ArrayList<>();
         for (final String trytesPart : trytes) {
             //validate all trytes
             Converter.trits(trytesPart, txTrits, 0);
             final TransactionViewModel transactionViewModel = instance.transactionValidator.validateTrits(txTrits,
                     instance.transactionValidator.getMinWeightMagnitude());
+            hashes.add(transactionViewModel.getHash());
 
             if(transactionViewModel.store(instance.tangle)) {
                 long count = transactionViewModel.addTxnCount(instance.tangle);
@@ -753,6 +760,7 @@ public class API {
                 }
             }
         }
+        TransactionData.getInstance().batchPutIndex(hashes);
     }
 
     private void executeContract(String msg, String tagVal) {
@@ -1358,8 +1366,7 @@ public class API {
      * @param message The message to store
      * @param tag     The tag to store, by default is TX
      **/
-    private synchronized AbstractResponse storeMessageStatement(final String address, final String message, String tag) throws Exception {
-//        final List<Hash> txToApprove = getTransactionToApproveTips(3, Optional.empty());
+    private synchronized AbstractResponse storeMessageStatement(final String address, final String message, final String tag) throws Exception {   
         List<Hash> txToApprove = new ArrayList<Hash>();
         try {
             txToApprove = getTransactionToApproveTips(3, Optional.empty());
@@ -1386,7 +1393,11 @@ public class API {
                     }
                     break;
                 case "TEE" :
-                    processed = Converter.asciiToTrytes(message);
+                    JsonReader jsonReader = new JsonReader(new StringReader(message));
+                    jsonReader.setLenient(true);
+                    Gson gson = new Gson();
+                    BatchTee tee = gson.fromJson(jsonReader, BatchTee.class);
+                    processed = Converter.asciiToTrytes(gson.toJson(tee));
                     break;
                 default:
                     processed = Converter.asciiToTrytes(message);
