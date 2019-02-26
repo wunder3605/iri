@@ -4,11 +4,8 @@ seed = EBZYNR9YVFIOAZUPQOLRZXPPPIKRCJ9EJKVCXMYVLMNOCCOPYPJKCWUZNLJZZZZWTMVQUXZFY
 enableIpfs = True
 enableBatching = False
 enableCompression = False
-<<<<<<< HEAD
-=======
 listenPort = 5000
 listenAddress = 0.0.0.0
->>>>>>> c754857... [fix #138] Document for how to deploy streamnet and related services
 
 [tendermint]
 addr = http://localhost:26657
