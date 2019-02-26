@@ -200,8 +200,4 @@ def put_action():
 
 if __name__ == '__main__':
     get_cache()
-<<<<<<< HEAD
-    app.run()
-=======
     app.run(host=listen_address, port=listen_port)
->>>>>>> c754857... [fix #138] Document for how to deploy streamnet and related services
