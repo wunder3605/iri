@@ -78,13 +78,10 @@ def getTransactionsToApprove(url):
     }
     return API(cmd, url)
 
-def storeMessage(url, address, message):
+def storeMessage(url, address, message, tag):
     cmd = {
         "command": "storeMessage",
         "address": address,
-<<<<<<< HEAD
-        "message": message
-=======
         "message": message,
         "tag": tag
     }
@@ -94,6 +91,5 @@ def getBalance(url, address, coinType):
     cmd = {
         "command": "getBalances",
         "cointype": coinType
->>>>>>> 23e6f62... Update api.py
     }
     return API(cmd, url)
