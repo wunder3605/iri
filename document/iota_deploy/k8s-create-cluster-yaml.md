@@ -166,7 +166,7 @@ spec:
 
 创建集群。
 
-```
+```shell
 sudo kubectl create -f iota_cli_dp.yaml;
 sudo kubectl create -f iota_cli_sc.yaml;
 ```
