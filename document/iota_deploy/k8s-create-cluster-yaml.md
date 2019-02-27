@@ -164,7 +164,7 @@ spec:
     app: iota-cli
 ```
 
-创建集群。
+创建集群.
 
 ```
 sudo kubectl create -f iota_cli_dp.yaml;
