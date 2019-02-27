@@ -4,7 +4,7 @@
 
 通过yaml创建集群，新建deployment文件，iota-deploy.yaml内容如下:
 
-```
+```yaml
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -29,7 +29,7 @@ spec:
 
 新建service文件，iota-service.yaml  
 
-```
+```yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -48,7 +48,7 @@ spec:
 
 创建集群 
 
-```
+```bash
 sudo kubectl create -f iota-deploy.yaml  
 sudo kubectl create -f iota-service.yaml
 ```
@@ -67,7 +67,7 @@ service文件中的spec.selector.app 和deployment中labels要对应
 
 新建iota_node_rc.yaml文件
 
-```
+```yaml
 apiVersioe: v1
 kind: ReplicationController
 metadata:
@@ -97,7 +97,7 @@ spec:
 
 新建iota_node_sc.yaml
 
-```
+```yaml
 apiVersion: v1
 
 kind: Service
@@ -113,7 +113,7 @@ spec:
     app: iota-node
   type: NodePort
 ```  
-```
+```bash
 sudo kubectl create -f iota_cli_dp.yaml  
 sudo kubectl create -f iota_cli_sc.yaml
 ```
@@ -122,7 +122,7 @@ sudo kubectl create -f iota_cli_sc.yaml
 
 新建iota_cli_dp.yaml文件
 
-```
+```yaml
 apiVersion: v1
 kind: ReplicationController
 metadata:
@@ -150,7 +150,7 @@ spec:
 
 新建iota_cli_sc.yaml文件.
 
-```
+```yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -166,7 +166,7 @@ spec:
 
 创建集群。
 
-```shell
+```bash
 sudo kubectl create -f iota_cli_dp.yaml;
 sudo kubectl create -f iota_cli_sc.yaml;
 ```
