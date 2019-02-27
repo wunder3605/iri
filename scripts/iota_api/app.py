@@ -48,12 +48,20 @@ def compress_str(data):
     else:
         return data
 
+
+def send(tx_string, tx_num=1,tag='TR'):
+    if enable_ipfs == True:
+        send_to_ipfs_iota(tx_string, tx_num, tag)
+    else:
+        send_to_iota(tx_string, tx_num,tag)
+
 def send(tx_string, tx_num=1, tag='TR'):
     if enable_ipfs == True:
         send_to_ipfs_iota(tx_string, tx_num, tag)
     else:
         print(tag,file=sys.stderr)
         send_to_iota(tx_string, tx_num, tag)
+
 
 def send_to_ipfs_iota(tx_string, tx_num, tag):
     global lock
@@ -84,7 +92,7 @@ def send_to_iota(tx_string, tx_num, tag):
             cache.cache_txn_in_tangle_simple(data, TagGenerator.get_current_tag(tag))
         else:
             compressed_data = compress_str(data)
-            cache.cache_txn_in_tangle_message(compressed_data)
+            cache.cache_txn_in_tangle_message(compressed_data, TagGenerator.get_current_tag(tag))
 
         print("[INFO]Cache data in tangle, the tangle tag is %s." % (TagGenerator.get_current_tag(tag)), file=sys.stderr)
 
