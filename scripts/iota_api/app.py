@@ -81,7 +81,7 @@ def send_to_iota(tx_string, tx_num):
             cache.cache_txn_in_tangle_simple(data, TagGenerator.get_current_tag("TR"))
         else:
             compressed_data = compress_str(data)
-            cache.cache_txn_in_tangle_message(compressed_data)
+            cache.cache_txn_in_tangle_message(compressed_data,TagGenerator.get_current_tag(tag))
 
         print("[INFO]Cache data in tangle, the tangle tag is %s." % (TagGenerator.get_current_tag("TR")), file=sys.stderr)
 
