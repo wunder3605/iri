@@ -244,10 +244,8 @@ public class API {
                     isMessage = true;
                     String address = (String) request.get("address");
                     String message = (String) request.get("message");
-<<<<<<< HEAD
                     AbstractResponse rsp = storeMessageStatement(address, message);
                     isMessage = false;
-=======
 
                     String tag = "TX"; // by default is TX
                     if(request.containsKey("tag")) {
@@ -257,7 +255,6 @@ public class API {
                     tag = StringUtils.rightPad(tagTrytes, 27, '9');
 
                     AbstractResponse rsp = storeMessageStatement(address, message, tag);
->>>>>>> 0089ec9... Merge pull request #150 from wunder3605/conflux_storage_utxo1
                     return rsp;
                 }
 

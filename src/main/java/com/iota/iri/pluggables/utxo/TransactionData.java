@@ -14,14 +14,11 @@ import com.alibaba.fastjson.JSON;
 public class TransactionData {
 
     Tangle tangle;
-<<<<<<< HEAD
     List<Transaction> transactions;
-=======
     List<Txn> transactions;
     HashMap<Hash, Hash> txnToTangleMap;
     HashMap<Hash, HashSet<Txn>> tangleToTxnMap;
     List<List<Txn>> tmpStorage;
->>>>>>> 0089ec9... Merge pull request #150 from wunder3605/conflux_storage_utxo1
 
     private static TransactionData txnData;
 
@@ -43,14 +40,11 @@ public class TransactionData {
     }
 
     public TransactionData() {
-<<<<<<< HEAD
         //empty constructor
-=======
         txnToTangleMap = new HashMap<Hash, Hash>();
         tangleToTxnMap = new HashMap<Hash, HashSet<Txn>>();
         tmpStorage = new ArrayList<>();
         init();
->>>>>>> 0089ec9... Merge pull request #150 from wunder3605/conflux_storage_utxo1
     }
 
     static class RawTxn {
@@ -69,8 +63,6 @@ public class TransactionData {
         public void setAmnt(long amnt) {
             this.amnt = amnt;
         }
-<<<<<<< HEAD
-=======
 
         public String toString() {
             return from + ":" + to + ":" +amnt+"\n";
@@ -157,7 +149,6 @@ public class TransactionData {
             e.printStackTrace();
             return false;
         }  
->>>>>>> 0089ec9... Merge pull request #150 from wunder3605/conflux_storage_utxo1
     }
 
     public void readFromStr(String txnsStr){

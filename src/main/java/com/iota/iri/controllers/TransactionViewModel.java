@@ -213,8 +213,6 @@ public class TransactionViewModel {
             return false;
         }
 
-<<<<<<< HEAD
-=======
         // check tag, if it's dag UTXO transaction, do accoridng process
         try {
             Hash tag = getTagValue();
@@ -246,7 +244,6 @@ public class TransactionViewModel {
             e.printStackTrace();
         }
 
->>>>>>> 0089ec9... Merge pull request #150 from wunder3605/conflux_storage_utxo1
         List<Pair<Indexable, Persistable>> batch = getSaveBatch();
         if (exists(tangle, hash)) {
             return false;
