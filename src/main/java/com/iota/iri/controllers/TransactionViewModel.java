@@ -11,12 +11,15 @@ import com.iota.iri.model.persistables.Bundle;
 import com.iota.iri.model.persistables.ObsoleteTag;
 import com.iota.iri.model.persistables.Tag;
 import com.iota.iri.model.persistables.Transaction;
+import com.iota.iri.pluggables.utxo.TransactionData;
 import com.iota.iri.storage.Indexable;
 import com.iota.iri.storage.Persistable;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.utils.Converter;
 import com.iota.iri.utils.Pair;
 import org.apache.commons.lang3.StringUtils;
+import com.iota.iri.pluggables.utxo.BatchTxns;
+import com.iota.iri.pluggables.utxo.Txn;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -238,6 +241,21 @@ public class TransactionViewModel {
                     System.arraycopy(sigTrits, 0, trits, SIGNATURE_MESSAGE_FRAGMENT_TRINARY_OFFSET, SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE);
                     Converter.bytes(trits(), 0, transaction.bytes, 0, trits().length);
                 }
+
+                BatchTxns tmpBatch = new BatchTxns();
+                int sigSize = SIGNATURE_MESSAGE_FRAGMENT_TRINARY_OFFSET/3;
+                JSONObject jo = new JSONObject(txnsStr);
+                txnsStr = jo.get("txn_content").toString();
+                TransactionData.getInstance().readFromStr(txnsStr);
+                Txn tx = TransactionData.getInstance().getLast();
+                tmpBatch.addTxn(tx);
+                TransactionData.getInstance().putIndex(tx, getHash());
+
+                String s = StringUtils.rightPad(tmpBatch.getTryteString(tmpBatch), sigSize, '9');
+                byte[] sigTrits = new byte[SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE];
+                Converter.trits(s, sigTrits, 0);
+                System.arraycopy(sigTrits, 0, trits, SIGNATURE_MESSAGE_FRAGMENT_TRINARY_OFFSET, SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE);
+                Converter.bytes(trits(), 0, transaction.bytes, 0, trits().length);
             }
         } catch(IllegalArgumentException e) {
         } catch(Exception e) {
@@ -570,7 +588,7 @@ public class TransactionViewModel {
         }
     }
 
-    public long addTxnCount(Tangle tangle, boolean isMessage) {
+    public long addTxnCount(Tangle tangle) {
         // TODO: replacing with isMilestone??
         if (isMilestoneTxn()) {
             tangle.addTxnCount(1);
@@ -578,12 +596,7 @@ public class TransactionViewModel {
         }
 
         if (BaseIotaConfig.getInstance().isEnableBatchTxns()) {
-            byte[] trits;
-            if (isMessage) {
-                trits = Arrays.copyOfRange(trits(), 0, ESSENCE_TRINARY_OFFSET);
-            } else {
-                trits = getSignature();
-            }
+            byte[] trits = getSignature();
             String trytes = Converter.trytes(trits);
 
             try {
@@ -595,12 +608,12 @@ public class TransactionViewModel {
                     tangle.addTxnCount(txnCount);
                     return txnCount;
                 } catch (JSONException e) {
-                    // transaction's format is not json,
+                    // transaction's format is not json
                     tangle.addTxnCount(1);
                     return 1;
                 }
             } catch (IllegalArgumentException e) {
-                // convert failed, tx content is illegal.
+                // failed to convert trytes to ascii, tx content is illegal.
                 e.printStackTrace();
                 return 0;
             }

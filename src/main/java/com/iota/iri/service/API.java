@@ -15,8 +15,10 @@ import com.iota.iri.hash.SpongeFactory;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashFactory;
 import com.iota.iri.network.Neighbor;
+import com.iota.iri.pluggables.utxo.TransactionData;
 import com.iota.iri.service.dto.*;
 import com.iota.iri.service.tipselection.impl.WalkValidatorImpl;
+import com.iota.iri.storage.localinmemorygraph.LocalInMemoryGraphProvider;
 import com.iota.iri.utils.Converter;
 import com.iota.iri.utils.IotaIOUtils;
 import com.iota.iri.utils.MapIdentityManager;
@@ -112,8 +114,6 @@ public class API {
     private Iota instance;
     
     private final String[] features;
-
-    private boolean isMessage = false;
 
     public API(Iota instance, IXI ixi) {
         this.instance = instance;
@@ -241,7 +241,6 @@ public class API {
                         return ErrorResponse.create("Invalid params");
                     }
 
-                    isMessage = true;
                     String address = (String) request.get("address");
                     String message = (String) request.get("message");
                     AbstractResponse rsp = storeMessageStatement(address, message);
@@ -254,6 +253,7 @@ public class API {
                     tag = StringUtils.rightPad(tagTrytes, 27, '9');
 
                     AbstractResponse rsp = storeMessageStatement(address, message, tag);
+
                     return rsp;
                 }
 
@@ -281,12 +281,16 @@ public class API {
                     return findTransactionsStatement(request);
                 }
                 case "getBalances": {
-                    final List<String> addresses = getParameterAsList(request,"addresses", HASH_SIZE);
-                    final List<String> tips = request.containsKey("tips") ?
-                            getParameterAsList(request,"tips", HASH_SIZE):
-                            null;
-                    final int threshold = getParameterAsInt(request, "threshold");
-                    return getBalancesStatement(addresses, tips, threshold);
+                    if(request.containsKey("cointype")) {
+                        return getStreamNetBalanceStatement(new ArrayList<String>()); // TODO fill in here
+                    } else {
+                        final List<String> addresses = getParameterAsList(request,"addresses", HASH_SIZE);
+                        final List<String> tips = request.containsKey("tips") ?
+                                getParameterAsList(request,"tips", HASH_SIZE):
+                                null;
+                        final int threshold = getParameterAsInt(request, "threshold");
+                        return getBalancesStatement(addresses, tips, threshold);
+                    }
                 }
                 case "getInclusionStates": {
                     if (invalidSubtangleStatus()) {
@@ -719,7 +723,7 @@ public class API {
             hashes.add(transactionViewModel.getHash());
 
             if(transactionViewModel.store(instance.tangle)) {
-                long count = transactionViewModel.addTxnCount(instance.tangle, isMessage);
+                long count = transactionViewModel.addTxnCount(instance.tangle);
                 log.info("received {} transactions.", count);
 
                 transactionViewModel.setArrivalTime(System.currentTimeMillis() / 1000L);
@@ -1070,6 +1074,13 @@ public class API {
         }
     }
 
+    private AbstractResponse getStreamNetBalanceStatement(final List<String> addresses) {
+        log.info("[StreamNet] balance is: \n" + TransactionData.getInstance().getData());
+        log.info("[StreamNet] graph is: \n");
+        LocalInMemoryGraphProvider prov = (LocalInMemoryGraphProvider)instance.tangle.getPersistenceProvider("LOCAL_GRAPH");
+        prov.printGraph(prov.graph, null);
+        return GetBalancesResponse.create(null, null, 0);
+    }
 
     /**
       * Returns the confirmed balance, as viewed by the specified <code>tips</code>. If you do not specify the referencing <code>tips</code>, the returned balance is based on the latest confirmed milestone.
@@ -1361,7 +1372,7 @@ public class API {
         // special process
         String msg = message;
 
-        if (isMessage) {
+        if (!BaseIotaConfig.getInstance().isEnableIPFSTxns() && BaseIotaConfig.getInstance().isEnableBatchTxns()) {
             String processed = IotaIOUtils.processBatchTxnMsg(message);
             if (processed == null) {
                 log.error("Special process failed!");
@@ -1429,7 +1440,7 @@ public class API {
         List<String> powResult = attachToTangleStatement(txToApprove.get(0), txToApprove.get(1), 9, transactions);
         broadcastTransactionsStatement(powResult);
 
-        if (isMessage) {
+        if (!BaseIotaConfig.getInstance().isEnableIPFSTxns() && BaseIotaConfig.getInstance().isEnableBatchTxns()) {
             storeTransactionsStatement(powResult);
         }
 

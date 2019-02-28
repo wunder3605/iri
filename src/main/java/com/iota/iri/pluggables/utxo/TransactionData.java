@@ -10,6 +10,15 @@ import com.iota.iri.storage.Tangle;
 import io.ipfs.api.IPFS;
 import io.ipfs.multihash.Multihash;
 import com.alibaba.fastjson.JSON;
+import com.iota.iri.controllers.TransactionViewModel;
+import com.iota.iri.model.Hash;
+
+import  com.iota.iri.utils.Converter;
+
+import org.json.JSONObject;
+import org.json.JSONArray;
+
+import com.iota.iri.utils.IotaUtils;
 
 public class TransactionData {
 
@@ -19,24 +28,20 @@ public class TransactionData {
     HashMap<Hash, Hash> txnToTangleMap;
     HashMap<Hash, HashSet<Txn>> tangleToTxnMap;
     List<List<Txn>> tmpStorage;
+    List<Txn> transactions;
+    HashMap<Hash, Hash> txnToTangleMap;
+    HashMap<Hash, HashSet<Txn>> tangleToTxnMap;
 
-    private static TransactionData txnData;
+    private static TransactionData txnData = new TransactionData();
 
-    // TODO make this thread safe
-    public static void setInstance(TransactionData txnData) 
-    {
-        if (txnData == null)
-        {
-            txnData = txnData;
+    public void setTangle(Tangle tangle) {
+        if(this.tangle == null) {
+            this.tangle = tangle;
         }
     }
+
     public static TransactionData getInstance() {
-        if(txnData == null)
-        {
-            txnData = new TransactionData();
-            txnData.init();
-        }
-        return txnData; 
+        return txnData;
     }
 
     public TransactionData() {
@@ -44,6 +49,8 @@ public class TransactionData {
         txnToTangleMap = new HashMap<Hash, Hash>();
         tangleToTxnMap = new HashMap<Hash, HashSet<Txn>>();
         tmpStorage = new ArrayList<>();
+        txnToTangleMap = new HashMap<Hash, Hash>();
+        tangleToTxnMap = new HashMap<Hash, HashSet<Txn>>();
         init();
     }
 
@@ -87,6 +94,7 @@ public class TransactionData {
         }
         tmpStorage.clear();
     }
+
 
     public void putIndex(Txn tx, Hash blockHash) {
         txnToTangleMap.put(tx.txnHash, blockHash);
@@ -181,13 +189,13 @@ public class TransactionData {
     public void init() {
         transactions = new ArrayList<>();
 
-        List<TransactionOut> txnOutList = new ArrayList<>();
-        TransactionOut txOut = new TransactionOut();
+        List<TxnOut> txnOutList = new ArrayList<>();
+        TxnOut txOut = new TxnOut();
         txOut.amount = 10000;  //just for testing
         txOut.userAccount = "A";  //just for testing
         txnOutList.add(txOut);
 
-        Transaction newTxn = new Transaction();
+        Txn newTxn = new Txn();
         newTxn.inputs = null;
         newTxn.outputs = txnOutList;
 
@@ -196,7 +204,7 @@ public class TransactionData {
         transactions.add(newTxn);
     }
 
-    public Transaction getLast() {
+    public Txn getLast() {
         return transactions.get(transactions.size()-1);
     }
 
@@ -253,18 +261,18 @@ public class TransactionData {
         long left = txn.amnt;
         long total = 0;
 
-        List<TransactionIn> txnInList = new ArrayList<>();
+        List<TxnIn> txnInList = new ArrayList<>();
 
         for (int i = transactions.size() - 1; i >= 0; i--){
 
-            List<TransactionOut> txnOutList = transactions.get(i).outputs;
+            List<TxnOut> txnOutList = transactions.get(i).outputs;
             for (int j = 0; j < txnOutList.size(); j++) {
-                TransactionOut txnOut = txnOutList.get(j);
+                TxnOut txnOut = txnOutList.get(j);
                 if (txnOut.userAccount.equals(formAddr)){
 
                     boolean jumpFlag = false;
                     for (int k = transactions.size() - 1; k > i; k--){
-                        for (TransactionIn tempTxnIn: transactions.get(k).inputs) {
+                        for (TxnIn tempTxnIn: transactions.get(k).inputs) {
                             if (tempTxnIn.txnHash == transactions.get(i).txnHash && tempTxnIn.idx == j){
                                 jumpFlag = true; // already spend
                                 break;
@@ -275,7 +283,7 @@ public class TransactionData {
                         continue;
                     }
 
-                    TransactionIn txnIn = new TransactionIn();
+                    TxnIn txnIn = new TxnIn();
                     txnIn.userAccount = formAddr;
                     txnIn.txnHash = transactions.get(i).txnHash;
                     txnIn.idx = j;
@@ -296,18 +304,18 @@ public class TransactionData {
             return false;
         }
 
-        Transaction newTxn = new Transaction();
+        Txn newTxn = new Txn();
         newTxn.inputs = txnInList;
 
-        List<TransactionOut> txnOutList = new ArrayList<>();
+        List<TxnOut> txnOutList = new ArrayList<>();
 
-        TransactionOut toTxOut = new TransactionOut();
+        TxnOut toTxOut = new TxnOut();
         toTxOut.amount = txn.amnt;
         toTxOut.userAccount = toAddr;
         txnOutList.add(toTxOut);
 
         if ((total - txn.amnt) > 0) {
-            TransactionOut fromTxOut = new TransactionOut();
+            TxnOut fromTxOut = new TxnOut();
             fromTxOut.amount = total - txn.amnt;
             fromTxOut.userAccount = formAddr;
             txnOutList.add(fromTxOut);
