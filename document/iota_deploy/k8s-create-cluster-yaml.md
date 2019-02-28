@@ -163,10 +163,15 @@ spec:
   selector:
     app: iota-cli
 ```
+<<<<<<< HEAD
 
 创建集群。
 
 ```bash
+=======
+创建集群
+```
+>>>>>>> Update k8s-create-cluster-yaml.md
 sudo kubectl create -f iota_cli_dp.yaml;
 sudo kubectl create -f iota_cli_sc.yaml;
 ```
