@@ -93,4 +93,3 @@ def getBalance(url, address, coinType):
         "cointype": coinType
     }
     return API(cmd, url)
-

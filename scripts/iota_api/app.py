@@ -48,20 +48,11 @@ def compress_str(data):
     else:
         return data
 
-
-def send(tx_string, tx_num=1,tag='TR'):
-    if enable_ipfs == True:
-        send_to_ipfs_iota(tx_string, tx_num, tag)
-    else:
-        send_to_iota(tx_string, tx_num,tag)
-
 def send(tx_string, tx_num=1, tag='TR'):
     if enable_ipfs == True:
         send_to_ipfs_iota(tx_string, tx_num, tag)
     else:
-        print(tag,file=sys.stderr)
         send_to_iota(tx_string, tx_num, tag)
-
 
 def send_to_ipfs_iota(tx_string, tx_num, tag):
     global lock
@@ -174,7 +165,7 @@ def put_cache():
     txn_cache.append(tx_string)
 
     if len(txn_cache) >= BATCH_SIZE:
-        # ring-buffer is full, send to ipfs and iota directly.
+        # ring-buffer is full, send to ipfs or iota immediately.
         t = threading.Thread(target=get_cache)
         t.start()
 
