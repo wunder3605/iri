@@ -221,7 +221,7 @@ public class TransactionViewModel {
             Hash tag = getTagValue();
             String tagStr = Converter.trytesToAscii(Converter.trytes(tag.trits()));
             String type = tagStr.substring(8, 10);
-            if(type.equals("TX")) {
+            if(type.equals("TX") && !BaseIotaConfig.getInstance().isEnableIPFSTxns()) {
                 String sig = Converter.trytes(getSignature());
                 String txnsStr = Converter.trytesToAscii(sig);
                 if(!txnsStr.contains("inputs") && !txnsStr.contains("outputs")) { // check if already been processed
