@@ -131,12 +131,6 @@ def get_cache():
             send(tx_txs, num_tx, 'TX')
         if num_tr != 0:
             send(tr_txs, num_tr, 'TR')
-        for i in range(nums):
-            tx = txn_cache.popleft()
-            tx_list.append(tx)
-
-    all_txs = json.dumps(tx_list)
-    send(all_txs, nums)
 
 
 app = Flask(__name__)
