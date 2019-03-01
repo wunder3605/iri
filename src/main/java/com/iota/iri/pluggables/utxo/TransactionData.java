@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.StringReader;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
@@ -35,6 +36,7 @@ public class TransactionData {
     List<Txn> transactions;
     HashMap<String, Hash> txnToTangleMap;
     HashMap<Hash, HashSet<Txn>> tangleToTxnMap;
+    List<List<Txn>> tmpStorage;
 
     private static TransactionData txnData = new TransactionData();
 
@@ -51,6 +53,7 @@ public class TransactionData {
     public TransactionData() {
         txnToTangleMap = new HashMap<String, Hash>();
         tangleToTxnMap = new HashMap<Hash, HashSet<Txn>>();
+        tmpStorage = new ArrayList<>();
         init();
     }
 
@@ -113,6 +116,25 @@ public class TransactionData {
         public String toString() {
             return from + ":" + to + ":" +amnt+"\n";
         }
+    }
+
+    public void createTmpStorageForBlock(BatchTxns tmpBatch){
+        List<Txn> newList = tmpBatch.txn_content.stream().collect(Collectors.toList());
+        tmpStorage.add(newList);
+    }
+
+    public void batchPutIndex(List<Hash> hashList) {
+        if(hashList.size() != tmpStorage.size() || hashList.size() <= 1) {
+            return;
+        }
+        int i=hashList.size()-1;
+        for(Hash h : hashList) {
+            for (Txn t : tmpStorage.get(i)) {
+                putIndex(t, h);
+            }
+            i--;
+        }
+        tmpStorage.clear();
     }
 
     public void putIndex(Txn tx, Hash blockHash) {
