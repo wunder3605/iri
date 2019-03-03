@@ -4,7 +4,7 @@
 ![GitHub release](https://img.shields.io/github/release/iotaledger/iri.svg)
 ![license](https://img.shields.io/github/license/iotaledger/iri.svg)
 
-# Trias StreamNet # 
+# Trias StreamNet #
 
 The IRI repository is the main IOTA Reference Implementation and the embodiment of the IOTA network specification. 
 
