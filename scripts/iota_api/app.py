@@ -30,7 +30,6 @@ TIMER_INTERVAL = 20
 BATCH_SIZE = 20
 COMPRESSED_SIZE = 7
 
-cache_lock = threading.Lock()
 lock = threading.Lock()
 
 
@@ -96,17 +95,13 @@ def get_cache():
     timer_thread = threading.Timer(TIMER_INTERVAL, get_cache)
     timer_thread.start()
 
-    global cache_lock
-    with cache_lock:
-        nums = min(len(txn_cache), BATCH_SIZE)
-        if nums == 0:
-            return
 
-        tx_list = []
-        tr_list = []
-        num_tr = 0
-        num_tx = 0
-        for i in range(nums):
+    tx_list = []
+    tr_list = []
+    num_tr = 0
+    num_tx = 0
+    for i in range(BATCH_SIZE):
+        try:
             tx = txn_cache.popleft()
             req_json = json.loads(tx)
             if not req_json.has_key(u'tag'):
@@ -115,13 +110,15 @@ def get_cache():
             elif req_json[u'tag'] == 'TX':
                 tx_list.append(tx)
                 num_tx += 1
+        except IndexError:
+            break
 
-        tr_txs = json.dumps(tr_list)
-        tx_txs = json.dumps(tx_list)
-        if num_tx != 0:
-            send(tx_txs, num_tx, 'TX')
-        if num_tr != 0:
-            send(tr_txs, num_tr, 'TR')
+    tr_txs = json.dumps(tr_list)
+    tx_txs = json.dumps(tx_list)
+    if num_tx != 0:
+        send(tx_txs, num_tx, 'TX')
+    if num_tr != 0:
+        send(tr_txs, num_tr, 'TR')
 
 
 app = Flask(__name__)
