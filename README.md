@@ -30,7 +30,7 @@ which is released whenever there is a new update here: [Github Releases](https:/
 Make sure to have Maven and Java 8 installed on your computer.
 
 ### To compile & package ###
-```bash
+```
 $ git clone https://github.com/trias-lab/iri
 $ cd iri
 $ mvn clean compile
@@ -39,7 +39,7 @@ $ mvn package
 
 ### To compiple docker ###
 
-```bash
+```
 $ docker build -t <name>:<tag> .
 ```
 
@@ -49,7 +49,7 @@ This will create a `target` directory in which you will find the executable jar 
 
 ### How to run one node ###
 
-```bash
+```
 $ cd scripts/examples/
 $ ./conflux_dag.sh
 $ ./start_cli.sh
@@ -59,7 +59,7 @@ $ ./get_balance.sh
 
 ### How to run two nodes ###
 
-```bash
+```
 $ cd scripts/examples/
 $ ./conflux_dag_two_nodes.sh
 $ ./start_cli_two_nodes.sh
@@ -69,6 +69,6 @@ $ ./get_balance_two_nodes.sh
 
 ### How to run docker ###
 
-```bash
-docker run -d --net=host --name <name> -v <local_data_dir>:/iri/data -v <neighbor_file>:/iri/conf/neighbors <name>:<tag> /entrypoint.sh
+```
+$ docker run -d --net=host --name <name> -v <local_data_dir>:/iri/data -v <neighbor_file>:/iri/conf/neighbors <name>:<tag> /entrypoint.sh
 ```
