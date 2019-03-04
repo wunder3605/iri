@@ -6,15 +6,9 @@
 
 # Trias StreamNet #
 
-The IRI repository is the main IOTA Reference Implementation and the embodiment of the IOTA network specification. 
-
-This is a full-featured [[IOTA]](https://iota.org/) node with a convenient JSON-REST HTTP interface.
-It allows users to become part of the [[IOTA]](https://iota.org) network as both a transaction relay
-and network information provider through the easy-to-use [[API]](https://iota.readme.io/reference).
-
-It is specially designed for users seeking a fast, efficient and fully-compatible network setup.
-
-Running an IRI node also allows light wallet users a node to directly connect to for their own wallet transactions.
+The trias-lab/iri repository is the main StreamNet reference implementation, 
+for the design details, please see yellow paper [[StreamNet]](https://github.com/wunder3605/iri/blob/dev/document/yellow\_paper/StreamNet/StreamNet.pdf). 
+The original iri reference could be found at [[iri]](https://github.com/iotaledger/iri).
 
 -* **License:** GPLv3
 
