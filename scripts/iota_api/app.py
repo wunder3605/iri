@@ -100,7 +100,7 @@ def get_cache():
     tr_list = []
     num_tr = 0
     num_tx = 0
-    for i in range(BATCH_SIZE):
+    for _ in range(BATCH_SIZE):
         try:
             tx = txn_cache.popleft()
             req_json = json.loads(tx)
