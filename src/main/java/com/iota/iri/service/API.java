@@ -233,15 +233,18 @@ public class API {
                         return ErrorResponse.create("Invalid params");
                     }
 
-                    String address = (String) request.get("address");
-                    String message = (String) request.get("message");
-
                     String tag = "TX"; // by default is TX
                     if(request.containsKey("tag")) {
                         tag = (String) request.get("tag");
                     }
-                    String tagTrytes = Converter.asciiToTrytes(tag);
-                    tag = StringUtils.rightPad(tagTrytes, 27, '9');
+
+                    String address = (String) request.get("address");
+                    String message;
+                    if (request.get("message") instanceof Map){
+                        message = (String) request.get("message").toString();
+                    }else{
+                        message = (String) request.get("message");
+                    }
 
                     AbstractResponse rsp = storeMessageStatement(address, message, tag);
                     return rsp;
@@ -1357,7 +1360,7 @@ public class API {
         try {
             txToApprove = getTransactionToApproveTips(3, Optional.empty());
         } catch (Exception e) {
-            log.info("Tip selection failed: " + e.getLocalizedMessage());
+            log.error("Tip selection failed: " + e.getLocalizedMessage());
             txToApprove.add(IotaUtils.getRandomTransactionHash());
             txToApprove.add(IotaUtils.getRandomTransactionHash());
         }
@@ -1368,10 +1371,21 @@ public class API {
         String msg = message;
 
         if (!BaseIotaConfig.getInstance().isEnableIPFSTxns() && BaseIotaConfig.getInstance().isEnableBatchTxns()) {
-            String processed = IotaIOUtils.processBatchTxnMsg(message);
-            if (processed == null) {
-                log.error("Special process failed!");
-                return AbstractResponse.createEmptyResponse();
+            String processed;
+            // skip 'YYYYMMDD' in tag
+            switch (tag.substring(8)){
+                case "TX" :
+                    processed = IotaIOUtils.processBatchTxnMsg(message);
+                    if (processed == null) {
+                        log.error("Special process failed!");
+                        return AbstractResponse.createEmptyResponse();
+                    }
+                    break;
+                case "TEE" :
+                    processed = Converter.asciiToTrytes(message);
+                    break;
+                default:
+                    processed = Converter.asciiToTrytes(message);
             }
             msg = processed;
         }
@@ -1404,7 +1418,7 @@ public class API {
             // value
             tx += StringUtils.repeat('9', 27);
             // obsolete tag
-            tx += tag;
+            tx += StringUtils.rightPad(Converter.asciiToTrytes(tag), 27, '9');
             // timestamp
             tx += timestampTrytes;
             // current index
