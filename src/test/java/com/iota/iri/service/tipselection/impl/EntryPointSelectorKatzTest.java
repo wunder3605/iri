@@ -67,6 +67,7 @@ public class EntryPointSelectorKatzTest {
                     .getRoot().getAbsolutePath(), 1000));
         tangle2.addPersistenceProvider(new LocalInMemoryGraphProvider("", tangle2));
         tangle2.init();
+        BaseIotaConfig.getInstance().setConfluxScoreAlgo("KATZ");
     }
 
     @Test
