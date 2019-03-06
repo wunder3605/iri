@@ -22,7 +22,7 @@ def modify_iota_cli_conf():
     cf.close()
 def modify_go_yaml():
     with open('config.yaml') as f:
-        content = yaml.load(f)
+        content = yaml.safe_load(f)
         content.update({'url': 'http://'+get_host_ip()+':14700'})
     with open('config.yaml', 'w') as nf:
         yaml.dump(content, nf,default_flow_style=False)
