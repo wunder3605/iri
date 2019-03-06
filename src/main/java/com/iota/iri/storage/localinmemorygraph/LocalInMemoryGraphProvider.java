@@ -540,9 +540,7 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
         do {
             Hash parent = parentGraph.get(block);
             List<Hash> subTopOrder = new ArrayList<>();
-            List<Hash> diff = new ArrayList<>(past(block));
-            diff.removeAll(past(parent));
-            //List<Hash> diff = getDiffSet(block, parent, covered);
+            List<Hash> diff = getDiffSet(block, parent, covered);
             while (diff.size() != 0) {
                 Map<Hash, Set<Hash>> subGraph = buildSubGraph(diff);
                 List<Hash> noBeforeInTmpGraph = subGraph.entrySet().stream().filter(e -> CollectionUtils.isEmpty(e.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
@@ -641,6 +639,58 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
             past.add(h);
         }
         return past;
+    }
+
+    public List<Hash> getDiffSet(Hash block, Hash parent, Set<Hash> covered) {
+        if (graph.get(block) == null) {
+            return Collections.emptyList();
+        }
+
+        Set<Hash> ret = new HashSet<Hash> ();
+        LinkedList<Hash> queue = new LinkedList<>();
+        queue.add(block);
+        Hash h;
+        while (!queue.isEmpty()) {
+            h = queue.pop();
+            for (Hash e : graph.get(h)) {
+                if (graph.containsKey(e) && !ret.contains(e) && !ifCovered(e, parent, covered)) {
+                    queue.add(e);
+                }
+            }
+            ret.add(h);
+        }
+        return new ArrayList<Hash>(ret);
+    }
+
+    private boolean ifCovered(Hash block, Hash ancestor, Set<Hash> covered) {
+        if (revGraph.get(block) == null) {
+            return false;
+        }
+
+        if(block.equals(ancestor)) {
+            return true;
+        }
+
+        Set<Hash> visisted = new HashSet<>();
+        LinkedList<Hash> queue = new LinkedList<>();
+        queue.add(block);
+        visisted.add(block);
+
+        Hash h;
+        while (!queue.isEmpty()) {
+            h = queue.pop();
+            for (Hash e : revGraph.get(h)) {
+                if(e.equals(ancestor)) {
+                    return true;
+                } else {
+                    if (revGraph.containsKey(e) && !visisted.contains(e) && !covered.contains(e)) {
+                        queue.add(e);
+                        visisted.add(e);
+                    } 
+                }
+            }
+        }
+        return false;
     }
 
     public int getNumOfTips() {
