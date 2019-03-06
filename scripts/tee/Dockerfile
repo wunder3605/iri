@@ -1,7 +1,7 @@
 FROM golang:1.11
-RUN apt-get -yqq update  \
- && apt-get -yqq install  python2.7  \
- && apt-get -yqq install python-pip  \
+RUN apt-get  update  \
+ && apt-get  install -y  --no-install-recommends python2.7  \
+ && apt-get  install -y python-pip  \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /go/src/app
