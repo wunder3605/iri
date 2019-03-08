@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.List;
 import java.util.Set;
 
@@ -19,16 +18,20 @@ import java.util.Set;
 public class Tangle {
     private static final Logger log = LoggerFactory.getLogger(Tangle.class);
 
-    // TODO: make 'txnCount' persistable.
-    private static AtomicLong txnCount = new AtomicLong(0);;
+    public static final Map<String, Class<? extends Persistable>> COLUMN_FAMILIES =
+            new LinkedHashMap<String, Class<? extends Persistable>>() {{
+                put("transaction", Transaction.class);
+                put("milestone", Milestone.class);
+                put("stateDiff", StateDiff.class);
+                put("address", Address.class);
+                put("approvee", Approvee.class);
+                put("bundle", Bundle.class);
+                put("obsoleteTag", ObsoleteTag.class);
+                put("tag", Tag.class);
+            }};
 
-    public void addTxnCount(long count) {
-        txnCount.addAndGet(count);
-    }
-
-    public long getTxnCount() {
-        return txnCount.get();
-    }
+    public static final Map.Entry<String, Class<? extends Persistable>> METADATA_COLUMN_FAMILY =
+            new AbstractMap.SimpleImmutableEntry<>("transaction-metadata", Transaction.class);
 
     private final List<PersistenceProvider> persistenceProviders = new ArrayList<>();
 
@@ -290,4 +293,26 @@ public class Tangle {
         return exists;
     }
     */
+
+    public void addTxnCount(long count) {
+        for (PersistenceProvider provider : this.persistenceProviders) {
+            provider.addTxnCount(count);
+        }
+    }
+
+    public long getTxnCount() {
+        long count = -1;
+        for (PersistenceProvider provider : this.persistenceProviders) {
+            try {
+                if ((count = provider.getTotalTxns()) != 0) {
+                    break;
+                }
+            } catch (Exception e) {
+
+                e.printStackTrace();
+                count = 0;
+            }
+        }
+        return count;
+    }
 }
