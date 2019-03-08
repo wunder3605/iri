@@ -307,6 +307,7 @@ public class TransactionData {
 
         List<TxnIn> txnInList = new ArrayList<>();
 
+        // TODO: find unspent utxo more quickly.
         for (int i = transactions.size() - 1; i >= 0; i--){
 
             List<TxnOut> txnOutList = transactions.get(i).outputs;
@@ -316,6 +317,7 @@ public class TransactionData {
 
                     boolean jumpFlag = false;
 
+                    // TODO: check utxo whether or not being spent more quickly.
                     out:
                     for (int k = transactions.size() - 1; k > 0; k--){
                         for (TxnIn tempTxnIn: transactions.get(k).inputs) {
@@ -373,7 +375,7 @@ public class TransactionData {
         return true;
     }
 
-    private String generateHash(byte[] bytes){
+    private String generateHash(byte[] bytes) {
         Hash trytes = HashFactory.TRANSACTION.create(bytes);
         byte[] initialValue = trytes.trits();
         Sponge k = SpongeFactory.create(SpongeFactory.Mode.KERL);
@@ -382,5 +384,36 @@ public class TransactionData {
         k.squeeze(hashValue, 0, hashValue.length);
         String hash = Converter.trytes(hashValue);
         return hash;
+    }
+
+    public long getBalance(String account) {
+        long total = 0;
+        // TODO: find unspent utxo more quickly.
+        for (int i = transactions.size() - 1; i >= 0; i--){
+            List<TxnOut> txnOutList = transactions.get(i).outputs;
+            for (int j = 0; j < txnOutList.size(); j++) {
+                TxnOut txnOut = txnOutList.get(j);
+                if (txnOut.userAccount.equals(account)){
+                    boolean jumpFlag = false;
+                    // TODO: check utxo whether or not being spent more quickly.
+                    out:
+                    for (int k = transactions.size() - 1; k > 0; k--){
+                        for (TxnIn tempTxnIn: transactions.get(k).inputs) {
+                            if (tempTxnIn.txnHash.equals(transactions.get(i).txnHash) && tempTxnIn.idx == j){
+                                jumpFlag = true; // already spend
+                                break out;
+                            }
+                        }
+                    }
+                    if (jumpFlag){
+                        continue;
+                    }
+
+                    total += txnOut.amount;
+                }
+            }
+        }
+
+        return total;
     }
 }
