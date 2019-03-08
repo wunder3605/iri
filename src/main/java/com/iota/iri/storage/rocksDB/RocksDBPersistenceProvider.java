@@ -567,7 +567,7 @@ public class RocksDBPersistenceProvider implements PersistenceProvider {
     }
 
     @Override
-    public void addTxnCount(long count) {
+    public synchronized void addTxnCount(long count) {
         try {
             FileOutputStream fos = new FileOutputStream(txnCountFile);
             fos.write(ByteBuffer.allocate(Long.BYTES).putLong(txnCount.addAndGet(count)).array());
