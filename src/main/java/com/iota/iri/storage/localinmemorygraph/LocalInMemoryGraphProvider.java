@@ -546,6 +546,7 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
 
     public List<Hash> confluxOrder(Hash block) {
         LinkedList<Hash> list = new LinkedList<>();
+        Set<Hash> covered = new HashSet<Hash>();
         if (block == null || !graph.keySet().contains(block)) {
             return list;
         }
@@ -562,20 +563,24 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
                 diff.removeAll(noBeforeInTmpGraph);
             }
             list.addAll(0, subTopOrder);
+            covered.addAll(subTopOrder);
             block = parentGraph.get(block);
         } while (parentGraph.get(block) != null && parentGraph.keySet().contains(block));
         return list;
     }
 
     public Map<Hash, Set<Hash>> buildSubGraph(List<Hash> blocks) {
-        Map<Hash, Set<Hash>> newGraph = new HashMap<>(graph.size());
-        graph.entrySet().forEach(e -> newGraph.put(e.getKey(), new HashSet<>(e.getValue())));
         Map<Hash, Set<Hash>> subMap = new HashMap<>();
-        for (Map.Entry<Hash, Set<Hash>> entry : newGraph.entrySet()) {
-            if (blocks.contains(entry.getKey())) {
-                entry.getValue().removeIf(hash -> !blocks.contains(hash));
-                subMap.put(entry.getKey(), entry.getValue());
+        for(Hash h : blocks) {
+            Set<Hash> s = graph.get(h);
+            Set<Hash> ss = new HashSet<>();
+            
+            for (Hash hh : s) {
+                if(blocks.contains(hh)) {
+                    ss.add(hh);
+                }
             }
+            subMap.put(h, ss);
         }
         return subMap;
     }
