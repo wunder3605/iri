@@ -1374,7 +1374,7 @@ public class API {
         try {
             txToApprove = getTransactionToApproveTips(3, Optional.empty());
         } catch (Exception e) {
-            log.error("Tip selection failed: " + e.getLocalizedMessage());
+            log.warn("Tip selection failed: {}. Is this the first transaction?", e.getLocalizedMessage());
             txToApprove.add(IotaUtils.getRandomTransactionHash());
             txToApprove.add(IotaUtils.getRandomTransactionHash());
         }
