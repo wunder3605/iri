@@ -7,7 +7,7 @@ modify_param = sys.argv[1]
 
 
 def get_host_ip():
-    oret = os.popen("curl ifconfig.io",'r',1)
+    oret = os.popen("sudo curl ifconfig.io",'r',1)
     return oret.read().replace('\n','')
 
 def parase_param_method():
@@ -17,11 +17,11 @@ def parase_param_method():
         for info in oret:
                 ippub,ippvt = info.replace('\n','').split(',')
                 ipdict[ippub] = ippvt 
-    return ipdict
+        return ipdict
 
 def get_pvt_ip():
-    ip_pub = get_host_ip()        
-    ip_total = parase_param_method() 
+    ip_pub = get_host_ip();
+    ip_total = parase_param_method();
     if ip_pub in ip_total:
         ip_pvt = ip_total[ip_pub]
         return ip_pvt
