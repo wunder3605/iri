@@ -16,6 +16,7 @@ import com.iota.iri.model.TransactionHash;
 import com.iota.iri.storage.Indexable;
 import com.iota.iri.storage.Persistable;
 import com.iota.iri.storage.Tangle;
+import com.iota.iri.storage.localinmemorygraph.LocalInMemoryGraphProvider;
 import com.iota.iri.utils.Pair;
 import io.ipfs.api.IPFS;
 import io.ipfs.multihash.Multihash;
@@ -24,6 +25,7 @@ import com.iota.iri.model.Hash;
 
 import  com.iota.iri.utils.Converter;
 
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.json.JSONArray;
 
@@ -405,19 +407,38 @@ public class TransactionData {
     }
 
     public long getBalance(String account) {
+        LocalInMemoryGraphProvider provider = (LocalInMemoryGraphProvider)tangle.getPersistenceProvider("LOCAL_GRAPH");
+        List<Hash> totalTopOrders = provider.totalTopOrder();
+        List<Txn> newTransactionss = new ArrayList<>();
+        try {
+            for(Hash hash : totalTopOrders) {
+                TransactionViewModel model = TransactionViewModel.find(tangle, hash.bytes());
+                byte[] sigTrits = model.getSignature();
+                String sigTrytes = Converter.trytes(sigTrits);
+                String info = Converter.trytesToAscii(sigTrytes);
+                //too many spacing
+                BatchTxns batch = new Gson().fromJson(StringUtils.trim(info), BatchTxns.class);
+                newTransactionss.addAll(batch.txn_content);
+            }
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+
         long total = 0;
+        //HashSet set = new HashSet<TxnOut>(); // for double spending.
+
         // TODO: find unspent utxo more quickly.
-        for (int i = transactions.size() - 1; i >= 0; i--){
-            List<TxnOut> txnOutList = transactions.get(i).outputs;
+        for (int i = 0; i < newTransactionss.size(); i++) {
+            List<TxnOut> txnOutList = newTransactionss.get(i).outputs;
             for (int j = 0; j < txnOutList.size(); j++) {
                 TxnOut txnOut = txnOutList.get(j);
-                if (txnOut.userAccount.equals(account)){
+                if (txnOut.userAccount.equals(account) /*&& !set.contains(txnOut)*/){
                     boolean jumpFlag = false;
                     // TODO: check utxo whether or not being spent more quickly.
                     out:
-                    for (int k = transactions.size() - 1; k > 0; k--){
-                        for (TxnIn tempTxnIn: transactions.get(k).inputs) {
-                            if (tempTxnIn.txnHash.equals(transactions.get(i).txnHash) && tempTxnIn.idx == j){
+                    for (int k = 1; k < newTransactionss.size(); k++){
+                        for (TxnIn tempTxnIn: newTransactionss.get(k).inputs) {
+                            if (tempTxnIn.txnHash.equals(newTransactionss.get(i).txnHash) && tempTxnIn.idx == j){
                                 jumpFlag = true; // already spend
                                 break out;
                             }
@@ -428,6 +449,7 @@ public class TransactionData {
                     }
 
                     total += txnOut.amount;
+                    //set.add(txnOut);
                 }
             }
         }
