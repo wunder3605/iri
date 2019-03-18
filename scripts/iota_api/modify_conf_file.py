@@ -1,13 +1,14 @@
 import socket
 import ConfigParser
 import yaml
-import sys,os,subprocess
+import sys
+from subprocess import Popen,PIPE
 cf = ConfigParser.ConfigParser()
 modify_param = sys.argv[1]
 
 
 def get_host_ip():
-    oret = subprocess.Popen("curl ifconfig.io",shell=True,stdout=subprocess.PIPE).stdout
+    oret = Popen("curl ifconfig.io",shell=True,stdout=PIPE).stdout
     return oret.read().replace('\n','')
 
 def parase_param_method():
