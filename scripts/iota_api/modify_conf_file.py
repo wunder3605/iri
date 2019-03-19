@@ -7,7 +7,7 @@ modify_param = sys.argv[1]
 
 
 def get_host_ip():
-    oret = commands.getoutput("curl -s ifconfig.io")
+    status,oret = commands.getstatusoutput(' '.join(['curl','-s','ifconfig.io']))
     return oret
 
 
