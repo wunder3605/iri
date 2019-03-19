@@ -1,17 +1,17 @@
-import socket
+import commands
 import ConfigParser
 import yaml
 import sys
-import os
 cf = ConfigParser.ConfigParser()
 modify_param = sys.argv[1]
 
 
 def get_host_ip():
-    oret = os.popen("/usr/bin/curl ifconfig.io",'r',1)
-    return oret.read().replace('\n','')
+    oret = commands.getoutput("curl -s ifconfig.io")
+    return oret
 
-def parase_param_method():
+
+def parse_param_method():
     with open('ipinfo.txt','r') as f:
         ipdict ={}
         oret = f.readlines()
@@ -20,14 +20,16 @@ def parase_param_method():
                 ipdict[ippub] = ippvt
         return ipdict
 
+
 def get_pvt_ip():
-    ip_pub = get_host_ip();
-    ip_total = parase_param_method();
+    ip_pub = get_host_ip()
+    ip_total = parse_param_method()
     if ip_pub in ip_total:
         ip_pvt = ip_total[ip_pub]
         return ip_pvt
     else:
         return 'localhost'
+
 
 def modify_iota_cli_conf():
     cf.read("conf")
@@ -35,6 +37,8 @@ def modify_iota_cli_conf():
     confile = open('conf','wb')
     cf.write(confile)
     confile.close()
+
+
 def modify_go_yaml():
     with open('config.yaml') as f:
         content = yaml.safe_load(f)
@@ -44,8 +48,8 @@ def modify_go_yaml():
 
 
 if __name__ == '__main__':
-     if "modify_go_yaml" in modify_param:
-         modify_go_yaml()
-     elif "modify_iota_cli_conf" in modify_param:
-         modify_iota_cli_conf()
+    if "modify_go_yaml" in modify_param:
+        modify_go_yaml()
+    elif "modify_iota_cli_conf" in modify_param:
+        modify_iota_cli_conf()
 
