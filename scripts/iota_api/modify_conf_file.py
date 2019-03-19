@@ -1,4 +1,4 @@
-import commands
+from subprocess import Popen,PIPE,STDOUT
 import ConfigParser
 import yaml
 import sys
@@ -7,8 +7,9 @@ modify_param = sys.argv[1]
 
 
 def get_host_ip():
-    status,oret = commands.getstatusoutput(' '.join(['curl','-s','ifconfig.io']))
-    return oret
+    oret = Popen(['curl','-s','ifconfig.io'],stdout=PIPE, stdin=PIPE, stderr=STDOUT)
+    ipout = oret.communicate()[0]
+    return ipout.strip()
 
 
 def parse_param_method():
