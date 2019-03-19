@@ -1,4 +1,4 @@
-from subprocess import check_output
+import subprocess
 import ConfigParser
 import yaml
 import sys
@@ -7,8 +7,9 @@ modify_param = sys.argv[1]
 
 
 def get_host_ip():
-    oret = check_output(['/usr/bin/curl','-s','ifconfig.io'],universal_newlines=True)
-    return oret.strip()
+    oret = subprocess.Popen(['/usr/bin/curl','-s','ifconfig.io'], shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    line = oret.stdout.readline().strip()
+    return line
 
 
 def parse_param_method():
