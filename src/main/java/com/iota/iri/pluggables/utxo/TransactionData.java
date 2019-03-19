@@ -409,7 +409,7 @@ public class TransactionData {
     public long getBalance(String account) {
         LocalInMemoryGraphProvider provider = (LocalInMemoryGraphProvider)tangle.getPersistenceProvider("LOCAL_GRAPH");
         List<Hash> totalTopOrders = provider.totalTopOrder();
-        List<Txn> newTransactionss = new ArrayList<>();
+        List<Txn> orderedTransactions = new ArrayList<>();
         try {
             for(Hash hash : totalTopOrders) {
                 TransactionViewModel model = TransactionViewModel.find(tangle, hash.bytes());
@@ -418,38 +418,81 @@ public class TransactionData {
                 String info = Converter.trytesToAscii(sigTrytes);
                 //too many spacing
                 BatchTxns batch = new Gson().fromJson(StringUtils.trim(info), BatchTxns.class);
-                newTransactionss.addAll(batch.txn_content);
+                orderedTransactions.addAll(batch.txn_content);
             }
         } catch(Exception e) {
             e.printStackTrace();
         }
+        //log.info("all txs = {}", orderedTransactions.toString());
 
         long total = 0;
-        //HashSet set = new HashSet<TxnOut>(); // for double spending.
+        HashSet passedTxnIns = new HashSet<String>();
+        HashSet passedTxns = new HashSet<Hash>();
+        HashSet invalidTxns = new HashSet<Hash>();
+        HashSet invalidTxnIns = new HashSet<String>();
 
-        // TODO: find unspent utxo more quickly.
-        for (int i = 0; i < newTransactionss.size(); i++) {
-            List<TxnOut> txnOutList = newTransactionss.get(i).outputs;
+        EACH_TRANSACTION:
+        for (int i = 0; i < orderedTransactions.size(); i++) {
+            Txn transaction = orderedTransactions.get(i);
+
+            // checking double spend
+            List<TxnIn> txnInList = transaction.inputs;
+            for (int j = 0; j < txnInList.size(); j++) {
+                TxnIn txnIn = txnInList.get(j);
+
+                // * The first two judgement: found duplicated txnIn -> this is double spend -> tx is invalid -> all txnOuts of this tx are invalid -> all txs using these
+                // invalid txnOuts are invalid -> go on
+                // * The third judgement: order is mistake, the txnIn's hash never seen before, so it is an invalid tx too.
+                if (passedTxnIns.contains(txnIn.toString()) || invalidTxnIns.contains(txnIn.toString()) || (i != 0 && !passedTxns.contains(txnIn.txnHash))) {
+                    //log.warn("found double spend and go on, or misorder {}", transaction.toString());
+
+                    // this transaction is invalid, roll back
+                    for (int k = 0; k < j; k++) {
+                        passedTxnIns.remove(txnInList.get(k).toString());
+                    }
+
+                    // this transaction as invalid
+                    invalidTxns.add(transaction.txnHash);
+                    // all txnOut of this transaction are invalid, and change it to TxnIn.
+                    for (int k = 0; k < transaction.outputs.size(); k++) {
+                        TxnOut o = transaction.outputs.get(k);
+                        TxnIn in = new TxnIn();
+                        in.userAccount = o.userAccount;
+                        in.txnHash = transaction.txnHash;
+                        in.idx = k;
+                        invalidTxnIns.add(in.toString());
+                    }
+
+                    continue EACH_TRANSACTION;
+                }
+
+                passedTxnIns.add(txnIn.toString());
+            }
+            passedTxns.add(transaction.txnHash);
+
+            List<TxnOut> txnOutList = transaction.outputs;
+            EACH_TXNOUT:
             for (int j = 0; j < txnOutList.size(); j++) {
                 TxnOut txnOut = txnOutList.get(j);
-                if (txnOut.userAccount.equals(account) /*&& !set.contains(txnOut)*/){
-                    boolean jumpFlag = false;
-                    // TODO: check utxo whether or not being spent more quickly.
-                    out:
-                    for (int k = 1; k < newTransactionss.size(); k++){
-                        for (TxnIn tempTxnIn: newTransactionss.get(k).inputs) {
-                            if (tempTxnIn.txnHash.equals(newTransactionss.get(i).txnHash) && tempTxnIn.idx == j){
-                                jumpFlag = true; // already spend
-                                break out;
+                if (txnOut.userAccount.equals(account)) {
+                    // check this txnOunt whether or not has been spent
+                    for (int k = 1; k < orderedTransactions.size(); k++) {
+                        Txn checksTxn = orderedTransactions.get(k);
+
+                        // skip invalid txn
+                        if (invalidTxns.contains(checksTxn)) {
+                            //log.warn("checks invalid {}", checksTxn.toString());
+                            continue;
+                        }
+
+                        for (TxnIn tempTxnIn: checksTxn.inputs) {
+                            if (tempTxnIn.txnHash.equals(transaction.txnHash) && tempTxnIn.idx == j){
+                                continue EACH_TXNOUT; // already spend
                             }
                         }
                     }
-                    if (jumpFlag){
-                        continue;
-                    }
-
+                    //log.info("total = {}, amount = {}", total, txnOut.amount);
                     total += txnOut.amount;
-                    //set.add(txnOut);
                 }
             }
         }
