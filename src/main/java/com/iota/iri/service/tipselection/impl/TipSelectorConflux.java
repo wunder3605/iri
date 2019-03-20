@@ -57,26 +57,27 @@ public class TipSelectorConflux implements TipSelector {
     @Override
     public List<Hash> getTransactionsToApprove(int depth, Optional<Hash> reference) throws Exception {
         List<Hash> tips = new LinkedList<>(); 
-
-        // Parental tip
-        Hash parentTip = tangle.getLastPivot();
-        tips.add(parentTip);
-
-        // Reference tip
         Hash entryPoint = entryPointSelector.getEntryPoint(depth);
         UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(entryPoint);
         WalkValidator walkValidator = new WalkValidatorImpl(tangle, ledgerValidator, milestoneTracker, config);
         if(BaseIotaConfig.getInstance().getWalkValidator().equals("NULL")) {
             walkValidator = new WalkValidatorNull();
         }
+
+        // Parental tip
+        Hash parentTip ;
+        // Reference tip
         Hash refTip;
+        int count = 0;
         do {
+            parentTip = tangle.getLastPivot();
             refTip = walker.walk(entryPoint, rating, walkValidator);
-        } while(tangle.getNumOfTips()>1 && refTip.equals(parentTip));
+        } while(tangle.getNumOfTips()>1 && refTip.equals(parentTip) && count++<10);
+        tips.add(parentTip);
         tips.add(refTip);
 
         // TODO validate UTXO etc.
-
         return tips;
+
     }
 }

@@ -386,14 +386,8 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
         }
 
         // TODO if the same score, choose randomly
-        Set<Hash> hashsOnLevel = topOrderStreaming.get(totalDepth - depth);
-        double maxScore = 0;
-        for (Hash h : hashsOnLevel) {
-            if (score.get(h) >= maxScore) {
-                ret = h;
-                maxScore = score.get(h);
-            }
-        }
+        buildPivotChain();
+        ret = this.pivotChain.get(this.pivotChain.size()-depth-1);
         return ret;
     }
 
