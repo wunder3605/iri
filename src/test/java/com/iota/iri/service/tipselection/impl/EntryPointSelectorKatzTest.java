@@ -106,27 +106,27 @@ public class EntryPointSelectorKatzTest {
         C.store(tangle1);
         E.store(tangle1);
         F.store(tangle1);
-        G.store(tangle1);
+//        G.store(tangle1);
         H.store(tangle1);
 
         // Compute without streaming graph
         BaseIotaConfig.getInstance().setStreamingGraphSupport(false);
-//        selector1 = new EntryPointSelectorKatz(tangle1, tag);
-//        Hash ret = selector1.getEntryPoint(-1);
-//        Assert.assertEquals(tag.get(A.getHash()),tag.get(ret));
-//        ret = selector1.getEntryPoint(2);
-//        Assert.assertEquals(tag.get(A.getHash()),tag.get(ret));
-//        ret = selector1.getEntryPoint(3);
-//        Assert.assertEquals(tag.get(B.getHash()),tag.get(ret));
+        selector1 = new EntryPointSelectorKatz(tangle1, tag);
+        Hash ret = selector1.getEntryPoint(-1);
+        Assert.assertEquals(tag.get(A.getHash()),tag.get(ret));
+        ret = selector1.getEntryPoint(0);
+        Assert.assertEquals(tag.get(D.getHash()),tag.get(ret));
+        ret = selector1.getEntryPoint(2);
+        Assert.assertEquals(tag.get(A.getHash()),tag.get(ret));
 
         // Compute with streaming graph
         BaseIotaConfig.getInstance().setStreamingGraphSupport(true);
-//        ret = selector1.getEntryPoint(-1);
-//        Assert.assertEquals(tag.get(A.getHash()),tag.get(ret));
-//        ret = selector1.getEntryPoint(2);
-//        Assert.assertEquals(tag.get(A.getHash()),tag.get(ret));
-//        ret = selector1.getEntryPoint(3);
-//        Assert.assertEquals(tag.get(B.getHash()),tag.get(ret));
+        ret = selector1.getEntryPoint(-1);
+        Assert.assertEquals(tag.get(A.getHash()),tag.get(ret));
+        ret = selector1.getEntryPoint(0);
+        Assert.assertEquals(tag.get(D.getHash()),tag.get(ret));
+        ret = selector1.getEntryPoint(2);
+        Assert.assertEquals(tag.get(A.getHash()),tag.get(ret));
 
         // reset in memory graph
         LocalInMemoryGraphProvider provider = new LocalInMemoryGraphProvider("", tangle1);
@@ -146,7 +146,7 @@ public class EntryPointSelectorKatzTest {
         D = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(A.getHash(),
                     A.getHash()), getRandomTransactionHash());
         E = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(A.getHash(),
-                    A.getHash()), getRandomTransactionHash());
+                    B.getHash()), getRandomTransactionHash());
         F = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(D.getHash(),
                     E.getHash()), getRandomTransactionHash());
         G = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(B.getHash(),
@@ -250,22 +250,22 @@ public class EntryPointSelectorKatzTest {
         tag.put(Z.getHash(), "Z");
 
         // Compute without streaming graph
-//        BaseIotaConfig.getInstance().setStreamingGraphSupport(false);
-//        selector2 = new EntryPointSelectorKatz(tangle2, tag);
-//        Hash ret = selector2.getEntryPoint(-1);
-//        Assert.assertEquals(tag.get(A.getHash()),tag.get(ret));
-//        ret = selector2.getEntryPoint(1);
-//        Assert.assertEquals(tag.get(A.getHash()),tag.get(ret));
+        BaseIotaConfig.getInstance().setStreamingGraphSupport(false);
+        selector2 = new EntryPointSelectorKatz(tangle2, tag);
+        Hash ret = selector2.getEntryPoint(-1);
+        Assert.assertEquals(tag.get(A.getHash()),tag.get(ret));
+        ret = selector2.getEntryPoint(0);
+        Assert.assertEquals(tag.get(Y.getHash()),tag.get(ret));
 //        ret = selector2.getEntryPoint(4);
 //        Assert.assertEquals(tag.get(J.getHash()),tag.get(ret));
 
         // Compute with streaming graph
-//        LocalInMemoryGraphProvider.setNameMap(tag);
-//        BaseIotaConfig.getInstance().setStreamingGraphSupport(true);
-//        ret = selector2.getEntryPoint(-1);
-//        Assert.assertEquals(tag.get(A.getHash()),tag.get(ret));
-//        ret = selector2.getEntryPoint(1);
-//        Assert.assertEquals(tag.get(A.getHash()),tag.get(ret));
+        LocalInMemoryGraphProvider.setNameMap(tag);
+        BaseIotaConfig.getInstance().setStreamingGraphSupport(true);
+        ret = selector2.getEntryPoint(-1);
+        Assert.assertEquals(tag.get(A.getHash()),tag.get(ret));
+        ret = selector2.getEntryPoint(0);
+        Assert.assertEquals(tag.get(Y.getHash()),tag.get(ret));
 //        ret = selector2.getEntryPoint(4);
 //        Assert.assertEquals(tag.get(J.getHash()),tag.get(ret));
 
