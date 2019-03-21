@@ -56,11 +56,19 @@ public class TipSelectorConflux implements TipSelector {
 
     @Override
     public List<Hash> getTransactionsToApprove(int depth, Optional<Hash> reference) throws Exception {
+
+        long start = System.currentTimeMillis();
+
         List<Hash> tips = new LinkedList<>(); 
 
         // Parental tip
         Hash parentTip = tangle.getLastPivot();
         tips.add(parentTip);
+
+        long end = System.currentTimeMillis();
+
+        long time1 = end - start; start = end;
+
 
         // Reference tip
         Hash entryPoint = entryPointSelector.getEntryPoint(depth);
@@ -75,6 +83,11 @@ public class TipSelectorConflux implements TipSelector {
         Hash refTip;
         refTip = walker.walk(entryPoint, rating, walkValidator);
         tips.add(refTip);
+
+        end = System.currentTimeMillis();
+        long time5 = end - start; start = end;
+
+        System.out.println("[zhaoming] time: " + time1 + " " + time2 + " " + time3 + " " + time4 + " " + time5);
 
         // TODO validate UTXO etc.
 
