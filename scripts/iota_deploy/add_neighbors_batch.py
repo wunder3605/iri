@@ -41,7 +41,7 @@ def add_neighbors(source_ip,desc_ip,port):
     ip_total = get_ip_list()
     add_flag = []
     for addip in desc_ip:
-        ret = subprocess.Popen(["pssh", "-i", "-H", "trust@"+ip_total[source_ip], "-x", "\"-oStrictHostKeyChecking=no\"",'''curl -s http://localhost:14700 -X POST -H 'Content-Type: application/json' -H  'X-IOTA-API-Version: 1' -d '{"command":"addNeighbors", "uris": ["tcp://%s:%s"]}' '''%(addip,port)],shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        ret = subprocess.Popen(["pssh", "-i", "-H", "trust@"+ip_total[source_ip], "-x", "\"-oStrictHostKeyChecking=no\"",'''/usr/bin/curl -s http://localhost:14700 -X POST -H 'Content-Type: application/json' -H  'X-IOTA-API-Version: 1' -d '{"command":"addNeighbors", "uris": ["tcp://%s:%s"]}' '''%(addip,port)],shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if 'SUCCESS' in ret.stdout.readline().strip():
             add_flag.append(source_ip + '------>' + addip + ':' + port + ' link success')
         else:
@@ -66,6 +66,4 @@ while True:
         oret = add_neighbors(source_ip,desc_ip,port)
         for link_info in oret:
             print(link_info)
-        
-
 
