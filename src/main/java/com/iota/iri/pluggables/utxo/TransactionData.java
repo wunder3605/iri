@@ -396,7 +396,6 @@ public class TransactionData {
         //
         Set<String> visisted = new HashSet<>();
         
-
         long total = 0;
 
         for (int i = 0; i < transactions.size(); i++) {       
