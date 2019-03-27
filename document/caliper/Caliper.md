@@ -162,6 +162,7 @@ $ npm install -g node-gyp
 
 
 ## 参考资料：
-https://docs.google.com/presentation/d/1MtPSBgDXf3v7DicxTNr9srB0jGmdWew2tqvItJHculo/edit#slide=id.p7
-https://www.jianshu.com/p/a9212848a34f
-https://github.com/nodejs/node-gyp
+
+https://docs.google.com/presentation/d/1MtPSBgDXf3v7DicxTNr9srB0jGmdWew2tqvItJHculo/edit#slide=id.p7<br>
+https://www.jianshu.com/p/a9212848a34f<br>
+https://github.com/nodejs/node-gyp<br>
