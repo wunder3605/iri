@@ -18,6 +18,9 @@ import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iota.iri.conf.BaseIotaConfig;
+import com.iota.iri.storage.localinmemorygraph.LocalInMemoryGraphProvider;
+
 import java.util.*;
 
 import static com.iota.iri.controllers.TransactionViewModelTest.*;
