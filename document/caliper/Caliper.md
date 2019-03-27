@@ -30,7 +30,7 @@ npm主要依赖包版本：
 ## **安装步骤**
 #### **下载caliper源代码**
 ```
-$ git clone https://github.com/hyperledger/caliper.git`
+$ git clone https://github.com/hyperledger/caliper.git
 ```
 
 #### **切换到caliper根目录**
@@ -57,8 +57,9 @@ fabric-client@1.4.0
 ```
 也可以单独通过安装以上四个包，通过如下方式可以确认是否安装成功:
 ```
-$ npm list fabric-ca-client`
+$ npm list fabric-ca-client
 ```
+![](./img/npm-list-fabric-ca-client.jpg)
 #### **运行测试基准**
 caliper提供了5个测试基准，我们以simple为例：
 ```
@@ -66,6 +67,7 @@ $ npm run test -- -- --config=benchmark/simple/config.yaml --network=network/fab
 ```
 
 执行成功后会在当前目录生成一个html格式的性能报告文件。
+![](./img/fabric-reprot-1.4.jpg)
 
 ## 附1：安装NodeJs环境
  apt-get 安装 nodejs
