@@ -7,25 +7,25 @@
 ## **准备工作**：
 安装caliper之前需要确认本机已具备如下环境，若未安装须参照附录部分逐个安装完毕。
 
-- NodeJs(8.X)
-- Docker(18.03.0-ce以上)
-- Docker-compose(1.21.0 以上)
-- node-gyp
+  - NodeJs(8.X)
+  - Docker(18.03.0-ce以上)
+  - Docker-compose(1.21.0 以上)
+  - node-gyp
 
 本实验安装环境如下:
 
- - Docker version 18.06.1-ce, build e68fc7a
- - docker-compose version 1.23.2, build 1110ad0 
- - npm version 6.4.1
- - node version v10.14.0
- - node-gyp v3.8.0
+  - Docker version 18.06.1-ce, build e68fc7a
+  - docker-compose version 1.23.2, build 1110ad0 
+  - npm version 6.4.1
+  - node version v10.14.0
+  - node-gyp v3.8.0
  
 npm主要依赖包版本：
 
- - fabric-ca-client@1.4.0
- - fabric-client@1.4.0
- - fabric-network@1.4.0
- - grpc@1.14.2
+  - fabric-ca-client@1.4.0
+  - fabric-client@1.4.0
+  - fabric-network@1.4.0
+  - grpc@1.14.2
 
 ## **安装步骤**
 #### **下载caliper源代码**
