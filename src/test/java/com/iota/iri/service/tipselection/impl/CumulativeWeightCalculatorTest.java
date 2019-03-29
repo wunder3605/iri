@@ -49,7 +49,9 @@ public class CumulativeWeightCalculatorTest {
         tangle.addPersistenceProvider( new RocksDBPersistenceProvider(
                 dbFolder.getRoot().getAbsolutePath(), logFolder.getRoot().getAbsolutePath(),1000, Tangle.COLUMN_FAMILIES, Tangle.METADATA_COLUMN_FAMILY));
         tangle.init();
-        cumulativeWeightCalculator = new CumulativeWeightCalculator(tangle);
+        cumulativeWeightCalculator = new CumulativeWeightMemCalculator(tangle);
+        BaseIotaConfig.getInstance().setStreamingGraphSupport(true);
+        BaseIotaConfig.getInstance().setConfluxScoreAlgo("CUM_WEIGHT");
     }
 
     @Test
