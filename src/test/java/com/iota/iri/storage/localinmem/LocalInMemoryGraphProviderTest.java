@@ -265,11 +265,7 @@ public class LocalInMemoryGraphProviderTest {
         System.out.println("=========testGetPivotChain=======");
         List<Hash> assertingList1 = Arrays.stream(new Hash[]{a.getHash(), b.getHash(), e.getHash(), h.getHash()}).collect(Collectors.toList());
         List<Hash> assertingList2 = Arrays.stream(new Hash[]{a.getHash(), b.getHash(), c.getHash(), g.getHash()}).collect(Collectors.toList());
-<<<<<<< HEAD
         List<Hash> rs = provider1.pivotChain(a.getHash());
-=======
-        List<Hash> rs = localInMemoryGraphProvider.pivotChain(a.getHash());
->>>>>>> modify LocalInMemoryGraphProviderTest
         assert assertingList1.equals(rs) || assertingList2.equals(rs);
         // reset in memory graph
         provider1.close();
