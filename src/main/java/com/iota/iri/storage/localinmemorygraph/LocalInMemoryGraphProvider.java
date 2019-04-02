@@ -622,6 +622,9 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
             if(s == null) {
                 return list;
             }
+            if(s == null) {
+                return list;
+            }
             start = s;
             list.add(s);
         }
@@ -634,6 +637,9 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
         }
         while (!CollectionUtils.isEmpty(parentRevGraph.get(start))) {
             Hash s = getMax(start);
+            if(s == null) {
+                return start;
+            }
             if(s == null) {
                 return start;
             }
