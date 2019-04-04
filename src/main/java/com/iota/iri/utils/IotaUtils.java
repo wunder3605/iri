@@ -81,5 +81,4 @@ public class IotaUtils {
         String idx = h.split(":")[1];
         return h.substring(0, len) + "." + idx;
     }
-
 }
