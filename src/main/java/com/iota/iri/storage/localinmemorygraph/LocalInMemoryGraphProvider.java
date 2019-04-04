@@ -399,7 +399,7 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
     }
 
     //FIXME for debug :: for graphviz visualization
-    public void printGraph(HashMap<Hash, Set<Hash>> graph, Hash k) {
+    public void printGraph(HashMap<Hash, Set<Hash>> graph, String k) {
         try {
             BufferedWriter writer = null;
             if(k != null) {
@@ -618,15 +618,7 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
         ArrayList<Hash> list = new ArrayList<>();
         list.add(start);
         while (!CollectionUtils.isEmpty(parentRevGraph.get(start))) {
-            double tmpMaxScore = -1;
-            Hash s = null;
-            for (Hash block : parentRevGraph.get(start)) {
-                //if (score.get(block) > tmpMaxScore || (score.get(block) == tmpMaxScore && block.compareTo(Objects.requireNonNull(s)) < 0)) {
-                if (parentScore.containsKey(block) && parentScore.get(block) > tmpMaxScore) {
-                    tmpMaxScore = parentScore.get(block);
-                    s = block;
-                }
-            }
+            Hash s = getMax(start);
             if(s == null) {
                 return list;
             }
@@ -641,16 +633,7 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
             return null;
         }
         while (!CollectionUtils.isEmpty(parentRevGraph.get(start))) {
-            Set<Hash> children = parentRevGraph.get(start);
-            double tmpMaxScore = -1;
-            Hash s = null;
-            for (Hash block : children) {
-                //if (score.get(block) > tmpMaxScore || (score.get(block) == tmpMaxScore && block.compareTo(Objects.requireNonNull(s)) < 0)) {
-                if (parentScore.containsKey(block) && parentScore.get(block) > tmpMaxScore) {
-                    tmpMaxScore = parentScore.get(block);
-                    s = block;
-                }
-            }
+            Hash s = getMax(start);
             if(s == null) {
                 return start;
             }
@@ -760,6 +743,18 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
 
     public boolean containsKeyInGraph(Hash hash) {
         return graph.containsKey(hash);
+    }
+
+    public HashMap<Hash, Set<Hash>> getGraph() {
+        return this.graph;
+    }
+
+    public Map<Hash, Hash> getParentGraph() {
+        return this.parentGraph;
+    }
+
+    public HashMap<Hash, Set<Hash>> getRevParentGraph() {
+        return this.parentRevGraph;
     }
 }
 

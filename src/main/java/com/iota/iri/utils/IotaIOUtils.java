@@ -149,8 +149,6 @@ public class IotaIOUtils extends IOUtils {
                     byte[] sigTrits = new byte[TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE];
                     Converter.trits(s, sigTrits, 0);
                     System.arraycopy(sigTrits, 0, ret, TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_OFFSET, TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE);
-
-                    TransactionData.getInstance().putIndex(tx, model.getHash());
                 }
             }
             return ret;
