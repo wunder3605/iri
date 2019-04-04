@@ -50,7 +50,6 @@ public class TransactionDataTest {
 
     @Test
     public void testReadFromStr(){
-
         List<Txn> list = transactionData.readFromStr("{\"from\":\"A\",\"to\":\"B\",\"amnt\":100}");
         transactionData.addTxn(list.get(0));
         Assert.assertEquals(transactionData.transactions.size(), 2);
