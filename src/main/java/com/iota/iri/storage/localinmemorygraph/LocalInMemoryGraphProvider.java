@@ -591,6 +591,26 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
         return subMap;
     }
 
+    private Hash getMax(Hash start) {
+        double tmpMaxScore = -1;
+        Hash s = null;
+        for (Hash block : parentRevGraph.get(start)) {
+            if (parentScore.containsKey(block)) {
+                if(parentScore.get(block) > tmpMaxScore) {
+                    tmpMaxScore = parentScore.get(block);
+                    s = block;
+                } else if(parentScore.get(block) == tmpMaxScore) {
+                    String sStr = Converter.trytes(s.trits());
+                    String blockStr = Converter.trytes(block.trits());
+                    if(sStr.compareTo(blockStr) < 0) {
+                        s = block;
+                    }
+                }
+            }
+        }
+        return s;
+    }
+
     public List<Hash> pivotChain(Hash start) {
         if (start == null || !graph.keySet().contains(start)) {
             return Collections.emptyList();
