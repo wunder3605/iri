@@ -2,6 +2,7 @@ package vue
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -32,14 +33,7 @@ func TestAddAttestationInfoFunction(t *testing.T) {
 		}
 
 		bodyBytes, _ := ioutil.ReadAll(r.Body)
-		fmt.Printf("received: %s", string(bodyBytes))
 		str = append(str, string(bodyBytes))
-		/*personList := make([]Person,0)
-		err = json.Unmarshal(bodyBytes, &personList)
-		if err != nil {
-			logs.Error("decode data fail")
-			return []Person{}, fmt.Errorf("decode data fail")
-		}*/
 	}))
 
 	_ = ts.Listener.Close()
@@ -50,7 +44,7 @@ func TestAddAttestationInfoFunction(t *testing.T) {
 	bytes := []byte("{\"Attester\":\"192.168.130.102\",\"Attestee\":\"192.168.130.129\",\"Score\":\"1\"}")
 	resp := o.AddAttestationInfoFunction(bytes)
 	if resp.Code != 1 {
-		fmt.Println("ERR")
+		fmt.Printf("failed to call AddAttestationInfoFunction: %s\n", resp.Message)
 		os.Exit(-1)
 	}
 }
@@ -70,8 +64,12 @@ func TestGetRankFunction(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		str := "{\"tee_num\":1,\"tee_content\":[{\"attester\":\"192.168.130.102\",\"attestee\":\"192.168.130.129\",\"score\":1}]}"
-		_, _ = w.Write([]byte(str))
+		w.Header().Set("Content-Type", "application/json")
+		str := `{"blocks":"[\"%7B%22tee_num%22%3A1%2C%22tee_content%22%3A%5B%7B%22attester%22%3A%22192.168.130.102%22%2C`+
+				`%22attestee%22%3A%22192.168.130.129%22%2C%22score%22%3A1%7D%5D%7D\",\"%7B%22tee_num%22%3A1%2C`+
+				`%22tee_content%22%3A%5B%7B%22attester%22%3A%22192.168.130.102%22%2C%22attestee%22%3A%22192.168.130.129%22`+
+				`%2C%22score%22%3A1%7D%5D%7D\"]","duration":5}`
+		_, _ = io.WriteString(w, str)
 	}))
 
 	_ = ts.Listener.Close()
@@ -82,9 +80,7 @@ func TestGetRankFunction(t *testing.T) {
 	bytes := []byte("{\"period\":1,\"numRank\":100}")
 	resp := o.GetRankFunction(bytes)
 	if resp.Code != 1 {
-		fmt.Printf("ERR: %s", resp.Message)
+		fmt.Printf("failed to call GetRankFunction: %s\n", resp.Message)
 		os.Exit(-1)
-	} else {
-		fmt.Printf("msg: %s", resp.Data)
 	}
 }
