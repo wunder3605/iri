@@ -7,27 +7,28 @@
 ## **准备工作**：
 安装caliper之前需要确认本机已具备如下环境，若未安装须参照附录部分逐个安装完毕。
 
-  - NodeJs(8.X)
-  - Docker(18.03.0-ce以上)
-  - Docker-compose(1.21.0 以上)
-  - node-gyp
+- NodeJs(8.X)
+- Docker(18.03.0-ce以上)
+- Docker-compose(1.21.0 以上)
+- node-gyp
 
 本实验安装环境如下:
 
-  - Docker version 18.06.1-ce, build e68fc7a
-  - docker-compose version 1.23.2, build 1110ad0 
-  - npm version 6.4.1
-  - node version v10.14.0
-  - node-gyp v3.8.0
- 
+- Docker version 18.06.1-ce, build e68fc7a
+- docker-compose version 1.23.2, build 1110ad0 
+- npm version 6.4.1
+- node version v10.14.0
+- node-gyp v3.8.0
+
 npm主要依赖包版本：
 
-  - fabric-ca-client@1.4.0
-  - fabric-client@1.4.0
-  - fabric-network@1.4.0
-  - grpc@1.14.2
+- fabric-ca-client@1.4.0
+- fabric-client@1.4.0
+- fabric-network@1.4.0
+- grpc@1.14.2
 
 ## **安装步骤**
+
 #### **下载caliper源代码**
 ```
 $ git clone https://github.com/hyperledger/caliper.git
@@ -128,43 +129,37 @@ $ docker-compose version
 ## 附4：安装node-gyp
 安装node-gyp对系统有一定要求：
 
-- UNIX:
+  - UNIX:
+    - pytyon (必须安装v2.7版本的，v3.x.x版本不支持)
+    - make
+    - 安装C++编译工具，如GCC
 
-  - pytyon (必须安装v2.7版本的，v3.x.x版本不支持)
- 
-  - make
- 
-  - 安装C++编译工具，如GCC
+  - Mac OS：
+    - python
+    - Xcode
 
-- Mac OS：
-
-   - python
-
-   - Xcode
-
-- Windows:
-  windows版本需要是专业版，否则会由于无法使用docker而导致无法部署。在windows上安装有红方法：
- -  方法1，以Administrator的权限运行如下命令：
-  ```
-  $ npm install --global --production windows-build-tools
-  ```
-
-   - 方法2，手动配置
-  安装C++编译环境，要支持2.x
-  安装python 2.7
-  执行命令
-  ```
-  $ npm config set msvs_version 2017
-  ```
-
-安装node-gyp:
-```
-$ npm install -g node-gyp
-```
-
+  - Windows:
+    windows版本需要是专业版，否则会由于无法使用docker而导致无法部署。在windows上安装有红方法：
+    -  方法1，以Administrator的权限运行如下命令：
+      ```shell
+      $ npm install --global --production windows-build-tools
+      ```
+    - 方法2，手动配置
+    
+      - 安装C++编译环境，要支持2.x
+      - 安装python 2.7
+      - 执行命令
+        ```shell
+      $ npm config set msvs_version 2017
+        ```
+      - 安装node-gyp:
+        ```shell
+      $ npm install -g node-gyp
+        ```
 
 ## 参考资料：
 
-https://docs.google.com/presentation/d/1MtPSBgDXf3v7DicxTNr9srB0jGmdWew2tqvItJHculo/edit#slide=id.p7<br>
-https://www.jianshu.com/p/a9212848a34f<br>
-https://github.com/nodejs/node-gyp<br>
+<https://docs.google.com/presentation/d/1MtPSBgDXf3v7DicxTNr9srB0jGmdWew2tqvItJHculo/edit#slide=id.p7/>
+<https://www.jianshu.com/p/a9212848a34f/>
+<https://github.com/nodejs/node-gyp/>
+
