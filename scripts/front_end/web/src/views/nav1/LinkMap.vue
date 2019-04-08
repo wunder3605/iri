@@ -30,14 +30,14 @@
                     period: "",
                     numRank: ""
                 }
-            }
+            };
         },
         methods: {
             onSubmit() {
                 console.log("submit!");
             },
             setDag(val) {
-                dagUrl = val
+                dagUrl = val;
             },
             setPeriod(val) {
                 requestData.period = val * 1;
@@ -48,9 +48,9 @@
             queryData() {
                 $("#dagResult").val("");
                 let requestUrl = "http://" + (dagUrl || window.location.host) + "/api/QueryData";
-                this.axios.post(requestUrl, requestData).then(res => {//success callback
+                this.axios.post(requestUrl, requestData).then((res) => {//success callback
                     if (res.data["Code"] === 0) {
-                        alert(data["Message"])
+                        alert(data["Message"]);
                     } else {
                         let data = res.data["Data"];
                         let scoreList = data["DataScore"];
@@ -59,12 +59,12 @@
                         this.drawRelationMap(relationMap);
                     }
 
-                }).catch(error => {
+                }).catch((error) => {
                     console.error(error);
                 });
             },
             drawRelationMap(data) {
-                let myChart = this.$echarts.init(document.getElementById('relationChart'));
+                let myChart = this.$echarts.init(document.getElementById("relationChart"));
                 myChart.showLoading();
                 let datas = {};
                 data.forEach(function (item) {
@@ -78,8 +78,8 @@
                 let series = [];
                 let seriesData;
                 seriesData = {
-                    type: 'graph',
-                    layout: 'force',
+                    type: "graph",
+                    layout: "force",
                     // progressiveThreshold: 700,
                     data: Object.keys(datas).map(function (item) {
                         return {
@@ -90,7 +90,7 @@
                             symbolSize: 25,
                             itemStyle: {
                                 normal: {
-                                    color: 'rgb(63, 167, 220)'
+                                    color: "rgb(63, 167, 220)"
                                 }
                             }
                         };
@@ -103,7 +103,7 @@
                     }),
                     label: {
                         emphasis: {
-                            position: 'right',
+                            position: "right",
                             show: true
                         }
                     },
@@ -124,9 +124,9 @@
                 series[0] = seriesData;
                 let mapOption = {};
                 mapOption.title = {};
-                mapOption.title.text = 'Trias-Dag Map';
+                mapOption.title.text = "Trias-Dag Map";
                 mapOption.animationDurationUpdate = 1500;
-                mapOption.animationEasingUpdate = 'quinticInOut';
+                mapOption.animationEasingUpdate = "quinticInOut";
                 mapOption.series = series;
                 myChart.setOption(mapOption, true);
                 myChart.hideLoading();

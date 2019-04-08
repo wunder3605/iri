@@ -9,7 +9,7 @@ import Vuex from 'vuex'
 import routes from './routes'
 import axios from 'axios'
 import Vueaxios from 'vue-axios'
-import Echarts from 'echarts'
+import Echarts from "echarts";
 
 
 import 'font-awesome/css/font-awesome.min.css'
