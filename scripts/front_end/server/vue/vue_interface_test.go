@@ -13,11 +13,11 @@ import (
 )
 
 var o OCli
-const MY_URL = "127.0.0.1:14700"
-var str []string = make([]string, 3)
+const MyURL = "127.0.0.1:14700"
+var nodes_cache = make([]string, 3)
 
 func TestAddAttestationInfoFunction(t *testing.T) {
-	l, err := net.Listen("tcp", MY_URL)
+	l, err := net.Listen("tcp", MyURL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func TestAddAttestationInfoFunction(t *testing.T) {
 		}
 
 		bodyBytes, _ := ioutil.ReadAll(r.Body)
-		str = append(str, string(bodyBytes))
+		nodes_cache = append(nodes_cache, string(bodyBytes))
 	}))
 
 	_ = ts.Listener.Close()
@@ -50,7 +50,7 @@ func TestAddAttestationInfoFunction(t *testing.T) {
 }
 
 func TestGetRankFunction(t *testing.T) {
-	l, err := net.Listen("tcp", MY_URL)
+	l, err := net.Listen("tcp", MyURL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -65,6 +65,7 @@ func TestGetRankFunction(t *testing.T) {
 
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
+		// TODO: replace these hard coded data with data in 'nodes_cache'
 		str := `{"blocks":"[\"%7B%22tee_num%22%3A1%2C%22tee_content%22%3A%5B%7B%22attester%22%3A%22192.168.130.102%22`+
 			   `%2C%22attestee%22%3A%22192.168.130.129%22%2C%22score%22%3A1%7D%5D%7D\"]","duration":5}`
 		_, _ = io.WriteString(w, str)
