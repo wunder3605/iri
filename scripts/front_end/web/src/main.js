@@ -12,7 +12,7 @@ import Vueaxios from "vue-axios";
 import Echarts from "echarts";
 
 
-import "font-awesome/css/font-awesome.min.css"
+import "font-awesome/css/font-awesome.min.css";
 
 Vue.use(ElementUI);
 Vue.use(VueRouter);
