@@ -14,7 +14,7 @@ import (
 
 var o OCli
 const MyURL = "127.0.0.1:14700"
-var nodes_cache = make([]string, 3)
+var nodesCache = make([]string, 3)
 
 func TestAddAttestationInfoFunction(t *testing.T) {
 	l, err := net.Listen("tcp", MyURL)
@@ -33,7 +33,7 @@ func TestAddAttestationInfoFunction(t *testing.T) {
 		}
 
 		bodyBytes, _ := ioutil.ReadAll(r.Body)
-		nodes_cache = append(nodes_cache, string(bodyBytes))
+		nodesCache = append(nodesCache, string(bodyBytes))
 	}))
 
 	_ = ts.Listener.Close()
