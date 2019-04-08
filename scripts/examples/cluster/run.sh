@@ -1,3 +1,4 @@
+#!/bin/bash
 
 JM_HOME=/home/stplaydog/apache-jmeter-5.1.1/bin/
 
@@ -51,19 +52,19 @@ do
 
         # run bootstrapping
         echo "run bootstrapping"
-        sudo sed 's/NUM_CALL/500/g' PerformanceTestDAG2TM_TPS.jmx > PerformanceTest.jmx 
-        sudo sed 's/NUM_THREAD/1/g' PerformanceTest.jmx > PerformanceTest1.jmx 
-        sudo sed 's/PORT/5000/g' PerformanceTest1.jmx > PerformanceTest.jmx 
-        sudo sed 's/DATA/data/g' PerformanceTest.jmx > PerformanceTest1.jmx 
+        sudo sed 's/NUM_CALL/500/g' PerformanceTestDAG2TM_TPS.jmx | sudo tee -a  PerformanceTest.jmx >  /dev/null
+        sudo sed 's/NUM_THREAD/1/g' PerformanceTest.jmx | sudo tee -a  PerformanceTest1.jmx > /dev/null
+        sudo sed 's/PORT/5000/g' PerformanceTest1.jmx | sudo tee -a  PerformanceTest.jmx > /dev/null
+        sudo sed 's/DATA/data/g' PerformanceTest.jmx | sudo tee -a  PerformanceTest1.jmx > /dev/null
         sudo ${JM_HOME}/jmeter -n -t PerformanceTest1.jmx 
         sleep 2 
 
         # run experiment
         echo "run experiment"
-        sudo sed 's/NUM_CALL/'${DATA}'/g' PerformanceTestDAG2TM_TPS.jmx > PerformanceTest.jmx 
-        sudo sed 's/NUM_THREAD/2/g' PerformanceTest.jmx > PerformanceTest1.jmx 
-        sudo sed 's/PORT/80/g' PerformanceTest1.jmx > PerformanceTest.jmx 
-        sudo sed 's/DATA/data1/g' PerformanceTest.jmx > PerformanceTest1.jmx 
+        sudo sed 's/NUM_CALL/'${DATA}'/g' PerformanceTestDAG2TM_TPS.jmx | sudo tee -a  PerformanceTest.jmx >  /dev/null
+        sudo sed 's/NUM_THREAD/2/g' PerformanceTest.jmx | sudo tee -a  PerformanceTest1.jmx >  /dev/null
+        sudo sed 's/PORT/80/g' PerformanceTest1.jmx | sudo tee -a  PerformanceTest.jmx >  /dev/null
+        sudo sed 's/DATA/data1/g' PerformanceTest.jmx | sudo tee -a  PerformanceTest1.jmx >  /dev/null
         sudo ${JM_HOME}/jmeter -n -t PerformanceTest1.jmx 
         sleep 2 
 
