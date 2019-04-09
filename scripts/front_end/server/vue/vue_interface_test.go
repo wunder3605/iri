@@ -58,8 +58,6 @@ func TestAddAttestationInfoFunction(t *testing.T) {
 		fmt.Printf("failed to call AddAttestationInfoFunction: %s\n", resp.Message)
 		os.Exit(-1)
 	}
-	fmt.Println(nodesCache)
-	fmt.Println(nodesCache[0],nodesCache[1],nodesCache[2])
 }
 
 func TestGetRankFunction(t *testing.T) {
@@ -78,13 +76,8 @@ func TestGetRankFunction(t *testing.T) {
 
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
-		// TODO: replace these hard coded data with data in 'nodes_cache'
-
-
 		str := `{"blocks":"[\"%7B%22tee_num%22%3A1%2C%22tee_content%22%3A%5B%7B%22attester%22%3A%22`+nodesCache[0]+`%22`+
 			`%2C%22attestee%22%3A%22`+nodesCache[1]+`%22%2C%22score%22%3A`+nodesCache[2]+`%7D%5D%7D\"]","duration":5}`
-
-
 		_, _ = io.WriteString(w, str)
 	}))
 
