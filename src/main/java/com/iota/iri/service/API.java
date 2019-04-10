@@ -364,7 +364,6 @@ public class API {
                     final List<String> addresses = getParameterAsList(request,"addresses", HASH_SIZE);
                     return wereAddressesSpentFromStatement(addresses);
                 }
-
                 default: {
                     AbstractResponse response = ixi.processCommand(command, request);
                     return response == null ?
@@ -670,7 +669,7 @@ public class API {
             return GetTransactionsToApproveResponse.create(tips.get(0), tips.get(1));
 
         } catch (Exception e) {
-            log.info("Tip selection failed: " + e.getLocalizedMessage());
+            log.error("Tip selection failed: " + e.getLocalizedMessage(),e);
             return ErrorResponse.create(e.getLocalizedMessage());
         }
     }
