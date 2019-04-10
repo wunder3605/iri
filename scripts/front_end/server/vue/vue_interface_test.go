@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -17,8 +16,8 @@ import (
 var o OCli
 const MyURL = "127.0.0.1:14700"
 var nodesCache = make([]string,3)
-var index int = 0
-var number int=1
+var index = 0
+var number = 1
 
 func TestAddAttestationInfoFunction(t *testing.T) {
 	l, err := net.Listen("tcp", MyURL)
@@ -45,12 +44,18 @@ func TestAddAttestationInfoFunction(t *testing.T) {
 	ts.Start()
 	defer ts.Close()
 
-	bytes := []byte("{\"Attester\":\"192.168.130.102\",\"Attestee\":\"192.168.130.129\",\"Score\":\"1\"}")
+	bytes := []byte("{\"Attester\":\"192.168.130.101\",\"Attestee\":\"192.168.130.110\",\"Score\":\"1\"}")
 	resp := o.AddAttestationInfoFunction(bytes)
 	if resp.Code != 1 {
-		fmt.Printf("failed to call AddAttestationInfoFunction: %s\n", resp.Message)
-		os.Exit(-1)
+		t.Errorf("failed to call AddAttestationInfoFunction: %s\n", resp.Message)
 	}
+
+	bytes1 := []byte("{\"Attester\":\"192.168.130.102\",\"Attestee\":\"192.168.130.120\",\"Score\":\"2\"}")
+	resp1 := o.AddAttestationInfoFunction(bytes1)
+	if resp1.Code != 1 {
+		t.Errorf("failed to call AddAttestationInfoFunction: %s\n", resp1.Message)
+	}
+
 }
 
 func TestGetRankFunction(t *testing.T) {
@@ -69,8 +74,16 @@ func TestGetRankFunction(t *testing.T) {
 
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
-		str := `{"blocks":"[\"%7B%22tee_num%22%3A1%2C%22tee_content%22%3A%5B%7B%22attester%22%3A%22`+nodesCache[0]+
-			`%22%2C%22attestee%22%3A%22`+nodesCache[1]+`%22%2C%22score%22%3A`+nodesCache[2]+`%7D%5D%7D\"]","duration":5}`
+
+		var str string
+		data := make([]string,1)
+		for i := 0;i < len(nodesCache);i += 3 {
+			data = append(data,`%7B%22attester%22%3A%22` + nodesCache[i+0] +
+				`%22%2C%22attestee%22%3A%22` + nodesCache[i+1] + `%22%2C%22score%22%3A` + nodesCache[i+2] +`%7D`)
+		}
+
+		str = strings.Trim(strings.Join(data,","),",")
+		str = `{"blocks":"[\"%7B%22tee_num%22%3A1%2C%22tee_content%22%3A%5B`+str+`%5D%7D\"]","duration":5}`
 		_, _ = io.WriteString(w, str)
 	}))
 
@@ -81,15 +94,14 @@ func TestGetRankFunction(t *testing.T) {
 	bytes := []byte("{\"period\":1,\"numRank\":100}")
 	resp := o.GetRankFunction(bytes)
 	if resp.Code != 1 {
-		fmt.Printf("failed to call GetRankFunction: %s\n", resp.Message)
-		os.Exit(-1)
+		t.Errorf("failed to call GetRankFunction: %s\n", resp.Message)
 	}
 
 	result:=checkData(resp.Data.DataCtx)
 	if result == 1{
-		fmt.Println("Data detection correct")
+	    fmt.Println("Data detection correct")
 	}else {
-       t.Error("Data detection failure")
+        t.Error("Data detection failure")
 	}
 
 }
@@ -102,7 +114,7 @@ func handleData(bodyBytes []byte){
 	data2 := reg.ReplaceAllString(nodes[14], "0")
 	nodes[14] = strings.Split(data2,"0")[2]
 
-	if number==1 {
+	if number == 1 {
 		for k := range nodes {
 			if k == 7 || k == 11 || k == 14 {
 				nodesCache[index] = nodes[k]
@@ -124,22 +136,40 @@ func checkData(a interface{}) int{
 	str := fmt.Sprintf("%v", a)
 	reg := regexp.MustCompile(`[{\[\]}]`)
 	ss := reg.ReplaceAllString(str, " ")
-	data := strings.Split(ss," ")
-	nodes := make([]string,3)
-	j := 0
-	for k:=range data{
-		if k==2||k==3||k==4{
-			nodes[j] = data[k]
-			j++
+	var tee teectx
+	var tees []teectx
+	s1 := strings.Fields(ss)
+	for k := range s1{
+		if s1[k] == "0" {
+			continue
+		}else {
+			if k % 3 == 0 {
+				tee.Attester = s1[k]
+			} else if k % 3 == 1 {
+				tee.Attestee = s1[k]
+			} else if k % 3 == 2{
+				tee.Score = s1[k]
+				tees = append(tees,tee)
+			}
 		}
 	}
-
-	for i := 0;i<3;i++{
-		if nodes[i] != nodesCache[i]{
-			return 0
-		}
+	j := 0
+    for k := range tees{
+	  if tees[k].Attester == nodesCache[j]&&
+	  	 tees[k].Attestee == nodesCache[j+1]&&
+	  	 tees[k].Score == nodesCache[j+2]{
+	  	 j += 3
+	  }else{
+		  return 0
+	  }
 	}
 	return 1
+}
+
+type teectx struct {
+	Attester string
+	Attestee string
+	Score   string
 }
 
 
