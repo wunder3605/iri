@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import sys,os
+import sys
 import re
 import sh
 cmd =  sh.Command("/usr/local/bin/pssh")
