@@ -35,6 +35,7 @@ def get_pvt_ip():
 def modify_iota_cli_conf():
     cf.read("conf")
     cf.set('iota','addr','http://'+get_pvt_ip()+':14700')
+    cf.set('iota','enableBatching','True')
     confile = open('conf','wb')
     cf.write(confile)
     confile.close()
