@@ -868,6 +868,7 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
             parentRevGraph = getSubGraph(parentRevGraph, curAncestor);
 
             degs = subMap(degs, graph);
+            degs = resetAncestor(degs,curAncestor);
             topOrder = new HashMap<>();
             computeToplogicalOrder();
 
@@ -877,6 +878,18 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
             parentScore = getSubScore(parentScore, parentRevGraph);
 
             buildPivotChain();
+        }
+
+        /**
+         * reset ancestor's parent level to 0
+         * @param degs
+         * @param curAncestor
+         * @return
+         */
+        private Map<Hash, Integer> resetAncestor(Map<Hash, Integer> degs, Hash curAncestor) {
+            totalDepth = 0;
+            graph.get(curAncestor).forEach(e -> degs.put(e,0));
+            return degs;
         }
 
         private HashMap<Hash, Double> getSubScore(HashMap<Hash, Double> score, Map<Hash, Set<Hash>> graph) {
@@ -892,9 +905,6 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
 
         private Map<Hash, Integer> subMap(Map<Hash, Integer> degs, Map<Hash, Set<Hash>> graph) {
             if (null == graph) {
-                if (degs == null){
-                    return null;
-                }
                 return degs;
             }
             Map<Hash, Integer> subDegs = new HashMap<>();
@@ -906,17 +916,17 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
             System.out.println("======" + tag + "=======");
             printGraph(graph, null);
             System.out.println("-----------");
-            printRevGraph(revGraph);
-            System.out.println("-----------");
-            if (parentGraph != null) {
-                parentGraph.entrySet().forEach(e -> System.out.println(String.format("\"%s\"->\"%s\"", IotaUtils.abbrieviateHash(e.getKey(), 4), IotaUtils.abbrieviateHash(e.getValue(), 4))));
-            }
-            System.out.println("-----------");
-            printRevGraph(parentRevGraph);
-            System.out.println("-----------");
+//            printRevGraph(revGraph);
+//            System.out.println("-----------");
+//            if (parentGraph != null) {
+//                parentGraph.entrySet().forEach(e -> System.out.println(String.format("\"%s\"->\"%s\"", IotaUtils.abbrieviateHash(e.getKey(), 4), IotaUtils.abbrieviateHash(e.getValue(), 4))));
+//            }
+//            System.out.println("-----------");
+//            printRevGraph(parentRevGraph);
+//            System.out.println("-----------");
             CollectionUtils.emptyIfNull(ancestors).stream().forEach(a -> System.out.println(IotaUtils.abbrieviateHash(a, 4)));
-            System.out.println("-----------");
-            System.out.println(ancestor);
+//            System.out.println("-----------");
+//            System.out.println(ancestor);
             System.out.println("======" + tag + "=======");
         }
 
