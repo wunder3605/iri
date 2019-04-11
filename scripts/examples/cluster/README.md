@@ -41,8 +41,7 @@ cd scripts/examples/cluster
 ./run.sh
 ```  
 ### 注意点
-
-1.测试在trust用户下进行的，不同用户根据情况调整server_deploy_batch.py里面的user信息  
-2.run.sh里面的JM_HOME根据自己安装路径进行调整
+[1]: 测试在trust用户下进行的，不同用户根据情况调整server_deploy_batch.py里面的user信息 
+[2]: run.sh里面的JM_HOME根据自己安装路径进行调整.
 
 
