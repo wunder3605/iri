@@ -77,7 +77,7 @@ public class UDPReceiver {
 
                 try {
                     socket.receive(receivingPacket);
-                    log.info("\n\nreceived from socket");
+
                     if (receivingPacket.getLength() == packetSize) {
 
                         byte[] bytes = Arrays.copyOf(receivingPacket.getData(), receivingPacket.getLength());

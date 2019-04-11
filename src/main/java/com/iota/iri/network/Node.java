@@ -46,7 +46,6 @@ public class Node {
     private final AtomicBoolean shuttingDown = new AtomicBoolean(false);
 
     private final List<Neighbor> neighbors = new CopyOnWriteArrayList<>();
-    //private final ConcurrentSkipListSet<TransactionViewModel> broadcastQueue = weightQueue();
     private final ConcurrentSkipListSet<Pair<TransactionViewModel, Neighbor>> broadcastQueue = weightQueueTxPair();
     private final ConcurrentSkipListSet<Pair<TransactionViewModel, Neighbor>> receiveQueue = weightQueueTxPair();
     private final ConcurrentSkipListSet<Pair<Hash, Neighbor>> replyQueue = weightQueueHashPair();
@@ -333,7 +332,6 @@ public class Node {
     public void addReceivedDataToReceiveQueue(TransactionViewModel receivedTransactionViewModel, Neighbor neighbor) {
         receiveQueue.add(new ImmutablePair<>(receivedTransactionViewModel, neighbor));
         if (receiveQueue.size() > RECV_QUEUE_SIZE) {
-            log.warn("\nReceiveQueue is full, throw the last one!!!!\n");
             receiveQueue.pollLast();
         }
 
@@ -485,8 +483,6 @@ public class Node {
             Hash hash = transactionRequester.transactionToRequest(rnd.nextDouble() < configuration.getpSelectMilestoneChild());
             System.arraycopy(hash != null ? hash.bytes() : transactionViewModel.getHash().bytes(), 0,
                     sendingPacket.getData(), TransactionViewModel.SIZE, reqHashSize);
-            log.info("===== begin to send packet {}", neighbor.getAddress().toString());
-            System.out.println("\n\n");
             neighbor.send(sendingPacket);
         }
 
@@ -503,20 +499,14 @@ public class Node {
                 try {
                     final Pair<TransactionViewModel, Neighbor> broadcastData = broadcastQueue.pollFirst();
                     if (broadcastData != null) {
-                        System.out.println("\n\n");
-                        System.out.println("===== Begin to broadcast...");
                         TransactionViewModel transactionViewModel = broadcastData.getLeft();
                         Neighbor from = broadcastData.getRight();
 
                         for (final Neighbor neighbor : neighbors) {
                             try {
-                                log.info("===== send_to '{}', msg is from '{}'", neighbor.getAddress().toString(), from);
-                                if (neighbor.equals(from)) {
-                                    log.info("===== send_to is equal to msg_from");
-                                } else {
-                                    log.info("===== send_to is NOT equal to msg_from");
+                                if (!neighbor.equals(from)) {
+                                    sendPacket(sendingPacket, transactionViewModel, neighbor);
                                 }
-                                sendPacket(sendingPacket, transactionViewModel, neighbor);
                             } catch (final Exception e) {
                                 // ignore
                             }
@@ -657,7 +647,6 @@ public class Node {
     public void broadcast(final TransactionViewModel transactionViewModel, Neighbor neighbor) {
         broadcastQueue.add(new ImmutablePair<>(transactionViewModel, neighbor));
         if (broadcastQueue.size() > BROADCAST_QUEUE_SIZE) {
-            log.warn("BroadcastQueue is full!!!\n");
             broadcastQueue.pollLast();
         }
     }
