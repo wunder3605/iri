@@ -31,7 +31,7 @@ git clone https://github.com/wangyh2016/conf_info
 
 ```bash
 cd scripts/examples
-sudo sh run_docker.sh
+sudo sh run_docker.sh true(true代表enable_batching为True,如果为false代表enable_batching为False)
 ```  
 
 在管理节点启动服务并进行测试  
@@ -41,6 +41,4 @@ cd scripts/examples/cluster
 ./run.sh
 ```  
 ### 注意点
-*.1 测试在trust用户下进行的，不同用户根据情况调整server_deploy_batch.py里面的user信息  
-
-*.2 run.sh里面的JM_HOME根据自己安装路径进行调整
+*.1 run.sh里面的JM_HOME根据自己安装路径进行调整

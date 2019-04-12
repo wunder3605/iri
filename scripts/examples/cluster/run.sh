@@ -43,7 +43,7 @@ do
         sleep 2
 
         # configure cli
-        python server_deploy_batch.py cli
+        python server_deploy_batch.py cli true
         sleep 2
 
         # configure topology
