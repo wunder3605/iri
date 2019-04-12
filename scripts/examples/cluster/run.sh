@@ -1,6 +1,6 @@
 #!/bin/bash
 
-JM_HOME= /opt/jmeter/bin/
+JM_HOME=/opt/jmeter/bin/
 
 sudo cp ../../iota_deploy/*.py .
 sudo cp ../../iota_perf/*.py .
