@@ -16,4 +16,4 @@ sudo docker run -d -p 14700:14700 -p 13700:13700 --name ${NAME} -v ${SCRIPTPATH}
 CLINAME=iota-cli
 cd scripts/
 docker build -t ${CLINAME}:${TAG} .
-sudo docker run -d -p 5000:5000 --name ${CLINAME} ${CLINAME}:${TAG} /docker-entrypoint.sh
+sudo docker run -d -p 5000:5000 -e "ENABLE_BATCHING=true" --name ${CLINAME} ${CLINAME}:${TAG} /docker-entrypoint.sh

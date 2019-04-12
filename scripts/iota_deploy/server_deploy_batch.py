@@ -86,13 +86,13 @@ def deploy_cli_server():
         if int(num_exist):
             cmd("-i", "-H", "%s@"%user + ip_address, "-x", "-oStrictHostKeyChecking=no", "sudo docker stop iota-cli")
             cmd("-i", "-H", "%s@"%user + ip_address, "-x", "-oStrictHostKeyChecking=no","sudo docker rm iota-cli")
-            cmd("-i", "-H", "%s@"%user + ip_address, "-x", "-oStrictHostKeyChecking=no", "sudo docker run -d -p 5000:5000 --name iota-cli iota-cli:v0.1-streamnet /docker-entrypoint.sh")
+            cmd("-i", "-H", "%s@"%user + ip_address, "-x", "-oStrictHostKeyChecking=no", '''sudo docker run -d -p 5000:5000 -e "ENABLE_BATCHING=true" --name iota-cli iota-cli:v0.1-streamnet /docker-entrypoint.sh''')
         else:
             exitflag = cmd("-i", "-H", "%s@"%user + ip_address, "-x", "-oStrictHostKeyChecking=no","sudo docker ps -a |grep iota-cli |wc -l")
             exitflag = exitflag.split()[-1]
             if int(exitflag):
                 cmd("-i", "-H", "%s@"%user + ip_address, "-x", "-oStrictHostKeyChecking=no", "sudo docker rm iota-cli")
-            cmd("-i", "-H", "%s@"%user + ip_address, "-x", "-oStrictHostKeyChecking=no","sudo docker run -d -p 5000:5000 --name iota-cli iota-cli:v0.1-streamnet /docker-entrypoint.sh")
+            cmd("-i", "-H", "%s@"%user + ip_address, "-x", "-oStrictHostKeyChecking=no",'''sudo docker run -d -p 5000:5000 -e "ENABLE_BATCHING=true" --name iota-cli iota-cli:v0.1-streamnet /docker-entrypoint.sh''')
     return 'success'
 
 # add and remove neighbors
