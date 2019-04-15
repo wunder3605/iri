@@ -11,23 +11,20 @@ import com.iota.iri.storage.Indexable;
 import com.iota.iri.storage.Persistable;
 import com.iota.iri.storage.PersistenceProvider;
 import com.iota.iri.storage.Tangle;
+import com.iota.iri.utils.Converter;
+import com.iota.iri.utils.IotaUtils;
 import com.iota.iri.utils.Pair;
 import org.apache.commons.collections4.CollectionUtils;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.PrintStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.stream.Collectors;
-import java.io.*;
-import com.google.gson.Gson;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.iota.iri.utils.*;
 
 public class LocalInMemoryGraphProvider implements AutoCloseable, PersistenceProvider {
-    private static final Logger log = LoggerFactory.getLogger(LocalInMemoryGraphProvider.class);
     private HashMap<Hash, Double> score;
     private HashMap<Hash, Double> parentScore;
     private HashMap<Hash, Set<Hash>> graph;
@@ -44,6 +41,14 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
     private Tangle tangle;
     // to use
     private List<Hash> pivotChain;
+
+    // 未能回溯到genesis的节点
+    Queue<Hash> unTracedNodes;
+    // 保存可回溯的节点，最坏的情况是保存了整个graph，空间换时间。
+    Set<Hash> tracedNodes;
+
+    Queue<Hash> parentUnTracedNodes;
+    Set<Hash> parentTracedNodes;
 
     private boolean available;
 
@@ -78,6 +83,10 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
         totalDepth = 0;
         topOrderStreaming = new HashMap<>();
         lvlMap = new HashMap<>();
+        unTracedNodes = new ConcurrentLinkedDeque<>();
+        tracedNodes = ConcurrentHashMap.newKeySet();
+        parentUnTracedNodes = new ConcurrentLinkedDeque<>();
+        parentTracedNodes = ConcurrentHashMap.newKeySet();
     }
 
     public void init() throws Exception {
@@ -318,8 +327,10 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
         try {
             if(BaseIotaConfig.getInstance().getStreamingGraphSupport()){
                 if (BaseIotaConfig.getInstance().getConfluxScoreAlgo().equals("CUM_WEIGHT")) {
-                    score = CumWeightScore.update(graph, score, vet);
-                    parentScore = CumWeightScore.updateParentScore(parentGraph, parentScore, vet);
+//                    score = CumWeightScore.update(graph, score, vet);
+//                    parentScore = CumWeightScore.updateParentScore(parentGraph, parentScore, vet);
+                    doUpdateScore(vet);
+                    rebuildParentScore(vet);
                 } else if (BaseIotaConfig.getInstance().getConfluxScoreAlgo().equals("KATZ")) {
                     score.put(vet, 1.0 / (score.size() + 1));
                     KatzCentrality centrality = new KatzCentrality(graph, revGraph, 0.5);
@@ -331,6 +342,122 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
         } catch (Exception e) {
             e.printStackTrace(new PrintStream(System.out));
         }
+    }
+
+    private void doUpdateScore(Hash h){
+        Hash genesis = getGenesis();
+        if (!tracedNodes.contains(genesis)){
+            tracedNodes.add(genesis);
+        }
+        //判断是否可回溯
+        if (!traceToGenesis(h)){
+            unTracedNodes.offer(h);
+            return;
+        }
+
+        tracedNodes.add(h);
+        score = CumWeightScore.update(graph, score, h);
+        checkUntracedNodes();
+        //FIXME print
+        System.out.println("tracedNodes:"+tracedNodes);
+        System.out.println("unTracedNodes:"+unTracedNodes);
+        System.out.println("----score-----");
+        printGraph(graph,null);
+        System.out.println("----score-----");
+    }
+
+    private void rebuildParentScore(Hash h){
+        Hash genesis = getGenesis();
+        if (!parentTracedNodes.contains(genesis)){
+            parentTracedNodes.add(genesis);
+        }
+
+        if (!parentTraceToGenesis(h)){
+            parentUnTracedNodes.offer(h);
+            return;
+        }
+        Hash hash = parentUnTracedNodes.peek();
+        int size = parentUnTracedNodes.size();
+        for (int i=0; i<size; i++) {
+            while (hash != null) {
+                if (parentTraceToGenesis(hash)) {
+                    parentScore = CumWeightScore.updateParentScore(parentGraph, parentScore, h);
+                    parentUnTracedNodes.remove();
+                }
+                hash = parentUnTracedNodes.peek();
+            }
+        }
+    }
+
+    private boolean parentTraceToGenesis(Hash h) {
+        //遍历，前驱节点是已遍历节点或genesis，返回true
+        Stack<Hash> confirmNodes = new Stack<>();
+        confirmNodes.push(h);
+        while (!confirmNodes.empty()){
+            Hash cur = confirmNodes.pop();
+            Hash confirmed = parentGraph.get(cur);
+            if (null == confirmed){
+                continue;
+            }
+            if (parentTracedNodes.contains(h)){
+                parentTracedNodes.add(h);
+                return true;
+            }
+            //父节点都是可回溯节点
+            confirmNodes.push(h);
+        }
+        return false;
+    }
+
+
+    private void checkUntracedNodes() {
+        if (unTracedNodes.isEmpty()){
+            return;
+        }
+        // 假设unTracedNodes也是乱序的，确保节点能够在其依赖节点计算完毕后得到计算机会
+        int unTracedSize = unTracedNodes.size();
+        for (int i=0; i<unTracedSize; i++) {
+            if (unTracedNodes.isEmpty()){
+                break;
+            }
+            Queue<Hash> tmpQueue = new ConcurrentLinkedDeque<>();
+            Hash h = unTracedNodes.poll();
+            while (h != null) {
+                if (!traceToGenesis(h)) {
+                    tmpQueue.offer(h);
+                    continue;
+                }
+                score = CumWeightScore.update(graph, score, h);
+            }
+            unTracedNodes = tmpQueue;
+        }
+    }
+
+    // 回溯方法，能够回溯到genesis或者已回溯节点都算作回溯成功
+    private boolean traceToGenesis(Hash h){
+        //遍历，前驱节点是已遍历节点或genesis，返回true
+        Stack<Hash> confirmNodes = new Stack<>();
+        confirmNodes.push(h);
+        while (!confirmNodes.empty()){
+            Hash cur = confirmNodes.pop();
+            Set<Hash> confirmed = graph.get(cur);
+            if (null == confirmed){
+                continue;
+            }
+            Set<Hash> preNodes = new HashSet<>();
+            for (Hash hash : confirmed){
+                if (tracedNodes.contains(hash)){
+                    preNodes.add(hash);
+                }
+            }
+            //父节点都是可回溯节点
+            if (preNodes.size() == confirmed.size()){
+                tracedNodes.add(h);
+                return true;
+            }
+            confirmed.forEach(e -> confirmNodes.push(e));
+        }
+        return false;
     }
 
     private void computeToplogicalOrder() {
@@ -404,44 +531,39 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
     }
 
     //FIXME for debug :: for graphviz visualization
-    public String printGraph(HashMap<Hash, Set<Hash>> graph, String type) {
-        String ret = "";
+    public void printGraph(HashMap<Hash, Set<Hash>> graph, String k) {
         try {
-            if(type.equals("DOT")) {
-                ret += "digraph G{\n";
-                for (Hash key : graph.keySet()) {
-                    for (Hash val : graph.get(key)) {
-                        if (nameMap != null) {
-                            ret += "\"" + nameMap.get(key) + "\"->" +
-                            "\"" + nameMap.get(val) + "\"\n";
+            BufferedWriter writer = null;
+            if(k != null) {
+                writer = new BufferedWriter(new FileWriter(IotaUtils.abbrieviateHash(k,4)));
+            }
+            for (Hash key : graph.keySet()) {
+                for (Hash val : graph.get(key)) {
+                    if (nameMap != null) {
+                        if(k != null) {
+                            writer.write("\"" + nameMap.get(key) + "\"->" +
+                                    "\"" + nameMap.get(val) + "\"\n");
                         } else {
-                            ret += "\"" + IotaUtils.abbrieviateHash(key, 6) + "\"->" +
-                            "\"" + IotaUtils.abbrieviateHash(val, 6) + "\"\n";
+                            System.out.println("\"" + nameMap.get(key) + "\"->" +
+                                    "\"" + nameMap.get(val) + "\"");
+                        }
+                    } else {
+                        if(k != null) {
+                            writer.write("\"" + IotaUtils.abbrieviateHash(key, 6) + "\"->" +
+                                    "\"" + IotaUtils.abbrieviateHash(val, 6) + "\"\n");
+                        } else {
+                            System.out.println("\"" + IotaUtils.abbrieviateHash(key, 6) + ":" + score.get(key) + "\"->" +
+                                    "\"" + IotaUtils.abbrieviateHash(val, 6) + ":" + score.get(key) + "\"");
                         }
                     }
                 }
-                ret += "}\n";
-            } else if (type.equals("JSON")) {
-                Gson gson = new Gson();
-                HashMap<String, Set<String>> toPrint = new HashMap<String, Set<String>>();
-                for(Hash h : graph.keySet()) {
-                    for(Hash s : graph.get(h)) {
-                        String from = Converter.trytes(h.trits());
-                        String to = Converter.trytes(s.trits());
-                        if(!toPrint.containsKey(from)) {
-                            toPrint.put(from, new HashSet<>());
-                        }
-                        Set<String> st = toPrint.get(from);
-                        st.add(to);
-                        toPrint.put(from, st);
-                    }
-                }
-                ret = gson.toJson(toPrint);
+            }
+            if(k != null) {
+                writer.close();
             }
         } catch(Exception e) {
             e.printStackTrace();
         }
-        return ret;
     }
 
 
@@ -520,17 +642,16 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
     }
 
     //TODO for debug
-    public void printParentScore() {
-        for(Hash key : parentScore.keySet()) {
-            log.info(key+":"+parentScore.get(key));
-        }
-    }
-
-    public void printScore() {
-        for(Hash key : score.keySet()) {
-            log.info(key+":"+score.get(key));
-        }
-    }
+//    public static void printScore() {
+//        for(Hash key : score.keySet()) {
+//            if(nameMap != null) {
+//                System.out.print(nameMap.get(key)+":"+score.get(key));
+//            } else {
+//                System.out.print(key+":"+score.get(key));
+//            }
+//            System.out.println();
+//        }
+//    }
 
     public void deleteBatch(Collection<Pair<Indexable, ? extends Class<? extends Persistable>>> models) throws Exception {
         // TODO implement this
