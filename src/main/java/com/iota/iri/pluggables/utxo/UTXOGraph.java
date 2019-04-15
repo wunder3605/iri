@@ -60,7 +60,7 @@ public class UTXOGraph {
             if(outGraph.get(key) == null) {
                 outGraph.put(key, new HashSet<String>());
             }
-            
+
             for(int i=0; i<newTx.outputs.size(); i++) {
                 String val = newTx.txnHash + ":" + String.valueOf(i) + "," + newTx.outputs.get(i).userAccount;
                 Set<String> outs = outGraph.get(key);
@@ -116,7 +116,7 @@ public class UTXOGraph {
     }
 
     public void markTheLaterAsDoubleSpend(List<Hash> order, HashMap<String, Hash> txnToTangleMap, Set<String> valSet) {
-        Map<String, Integer> toSort = new ConcurrentHashMap<>(); 
+        Map<String, Integer> toSort = new ConcurrentHashMap<>();
         for(String out : valSet) {
             Hash h = txnToTangleMap.get(out);
             int pos = order.indexOf(h);
@@ -134,9 +134,9 @@ public class UTXOGraph {
         .collect(
             toMap(e -> e.getKey(), e -> e.getValue(), (e1, e2) -> e2,
                 LinkedHashMap::new));
-        
+
         int i = 0;
-        for(String key : sorted.keySet()) {    
+        for(String key : sorted.keySet()) {
             if(i>0) {
                 doubleSpendSet.add(key);
             }
@@ -145,7 +145,56 @@ public class UTXOGraph {
     }
 
     public Boolean isSpent(String key) {
-        return outGraph.containsKey(key);
+        if (outGraph.containsKey(key)) {
+            Set<String> vals = outGraph.get(key);
+
+            // If all the subs have only one 'up', as following, the up MUST have been spent, so return true.
+            //    *
+            //   / \
+            //  *  *
+            boolean haveOneUp = true;
+            for (String s: vals) {
+                Set<String> set = inGraph.get(s);
+                if (set.size() != 1) {
+                    haveOneUp = false;
+                    break;
+                }
+            }
+            if (haveOneUp) {
+                return true;
+            }
+
+            // divide all the vals into groups by the transaction hash.
+            Map<String, Set<String>> groups = new HashMap<>();
+            for (String s: vals) {
+                String[] k = s.split(":");
+                String hash = k[0];
+                if (!groups.containsKey(hash)) {
+                    Set<String> set = new HashSet<>();
+                    set.add(s);
+                    groups.put(key, set);
+                } else {
+                    Set<String> set = groups.get(key);
+                    set.add(s);
+                }
+            }
+
+            // check each group if it have an doubleSpent item
+            for (String k: groups.keySet()) {
+                boolean allTxnOutOk = true;
+                for (String s: groups.get(k)) {
+                    if (isDoubleSpend(s)) {
+                        allTxnOutOk = false;
+                    }
+                }
+
+                if (allTxnOutOk) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public Boolean isDoubleSpend(String key) {
@@ -196,7 +245,7 @@ public class UTXOGraph {
                                 if(spend.contains(val)) {
                                     writer.write("\""+IotaUtils.abbrieviateHash(val, 6)+"\"[" + "shape=square]\n");
                                 }
-                            } 
+                            }
                         } else {
                             System.out.println("\"" + IotaUtils.abbrieviateHash(key, 6) + "\"->" +
                                     "\"" + IotaUtils.abbrieviateHash(val, 6) + "\"");
@@ -205,8 +254,8 @@ public class UTXOGraph {
                                 System.out.println("\""+IotaUtils.abbrieviateHash(val, 6)+"\"[" + "style=filled, fillcolor=red]");
                             } else if (!isSpent(val)) {
                                 System.out.println("\""+IotaUtils.abbrieviateHash(val, 6)+"\"[" + "style=filled, fillcolor=green]");
-                            } 
-                        }   
+                            }
+                        }
                     } catch(Exception e) {
                         ;
                     }

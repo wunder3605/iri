@@ -133,12 +133,12 @@ public class TransactionData {
         if(hashList.size() != tmpStorage.size() || hashList.size() <= 1) {
             return;
         }
-        int i=hashList.size()-1;
+        int i=0;
         for(Hash h : hashList) {
             for (Txn t : tmpStorage.get(i)) {
                 putIndex(t, h);
             }
-            i--;
+            i++;
         }
         tmpStorage.clear();
     }
@@ -395,11 +395,11 @@ public class TransactionData {
         utxoGraph.markDoubleSpend(totalTopOrders, txnToTangleMap);
         //
         Set<String> visisted = new HashSet<>();
-        
+
 
         long total = 0;
 
-        for (int i = 0; i < transactions.size(); i++) {       
+        for (int i = 0; i < transactions.size(); i++) {
             Txn transaction = transactions.get(i);
             if(visisted.contains(transaction.txnHash)) {
                 continue; //FIXME this is a problem
@@ -408,7 +408,7 @@ public class TransactionData {
             for (int j = 0; j < txnOutList.size(); j++) {
                 TxnOut txnOut = txnOutList.get(j);
                 String key = transaction.txnHash + ":" + String.valueOf(j) + "," + txnOut.userAccount;
-                if (txnOut.userAccount.equals(account) && !utxoGraph.isSpent(key) && !utxoGraph.isDoubleSpend(key)) {
+                if (txnOut.userAccount.equals(account) && !utxoGraph.isDoubleSpend(key) && !utxoGraph.isSpent(key)) {
                     total += txnOut.amount;
                 }
             }
