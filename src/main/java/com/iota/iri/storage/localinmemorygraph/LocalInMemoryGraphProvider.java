@@ -21,9 +21,13 @@ import java.util.stream.Collectors;
 import java.io.*;
 import com.google.gson.Gson;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.iota.iri.utils.*;
 
 public class LocalInMemoryGraphProvider implements AutoCloseable, PersistenceProvider {
+    private static final Logger log = LoggerFactory.getLogger(LocalInMemoryGraphProvider.class);
     private HashMap<Hash, Double> score;
     private HashMap<Hash, Double> parentScore;
     private HashMap<Hash, Set<Hash>> graph;
@@ -315,10 +319,7 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
             if(BaseIotaConfig.getInstance().getStreamingGraphSupport()){
                 if (BaseIotaConfig.getInstance().getConfluxScoreAlgo().equals("CUM_WEIGHT")) {
                     score = CumWeightScore.update(graph, score, vet);
-		    parentScore = CumWeightScore.computeParentScore(parentGraph, parentRevGraph);
-                    //parentScore = CumWeightScore.updateParentScore(parentGraph, parentScore, vet);
-                    //doUpdateScore(vet);
-                    //rebuildParentScore(vet);
+                    parentScore = CumWeightScore.updateParentScore(parentGraph, parentScore, vet);
                 } else if (BaseIotaConfig.getInstance().getConfluxScoreAlgo().equals("KATZ")) {
                     score.put(vet, 1.0 / (score.size() + 1));
                     KatzCentrality centrality = new KatzCentrality(graph, revGraph, 0.5);
@@ -516,6 +517,19 @@ public class LocalInMemoryGraphProvider implements AutoCloseable, PersistencePro
             return revGraph.get(block);
         }
         return new HashSet<>();
+    }
+
+    //TODO for debug
+    public void printParentScore() {
+        for(Hash key : parentScore.keySet()) {
+            log.info(key+":"+parentScore.get(key));
+        }
+    }
+
+    public void printScore() {
+        for(Hash key : score.keySet()) {
+            log.info(key+":"+score.get(key));
+        }
     }
 
     public void deleteBatch(Collection<Pair<Indexable, ? extends Class<? extends Persistable>>> models) throws Exception {
