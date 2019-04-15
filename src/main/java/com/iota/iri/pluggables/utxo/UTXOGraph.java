@@ -144,53 +144,68 @@ public class UTXOGraph {
         }
     }
 
+    private boolean isAllOutsWithMultipleIns(Set<String> vals) {
+        // If all the subs have only one 'up', as following, the up MUST have been spent.
+        //    *
+        //   / \
+        //  *  *
+        for (String s: vals) {
+            Set<String> set = inGraph.get(s);
+            if (set.size() != 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isAllOutsOkWithMultipleIns(String key, Set<String> vals) {
+        //     *1     *2
+        //     /  \   /
+        //    *3   *4
+        // If *2 is doubleSpent, *4 will be doubleSpent too. so *1 should be countted in total balance install of *3.
+
+        // divide all the vals into groups by the transaction hash.
+        Map<String, Set<String>> groups = new HashMap<>();
+        for (String s: vals) {
+            String[] k = s.split(":");
+            String hash = k[0];
+            if (!groups.containsKey(hash)) {
+                Set<String> set = new HashSet<>();
+                set.add(s);
+                groups.put(key, set);
+            } else {
+                Set<String> set = groups.get(key);
+                set.add(s);
+            }
+        }
+
+        // check each group if it have an doubleSpent item
+        for (String k: groups.keySet()) {
+            boolean allTxnOutOk = true;
+            for (String s: groups.get(k)) {
+                if (isDoubleSpend(s)) {
+                    allTxnOutOk = false;
+                }
+            }
+
+            if (allTxnOutOk) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public Boolean isSpent(String key) {
         if (outGraph.containsKey(key)) {
             Set<String> vals = outGraph.get(key);
 
-            // If all the subs have only one 'up', as following, the up MUST have been spent, so return true.
-            //    *
-            //   / \
-            //  *  *
-            boolean haveOneUp = true;
-            for (String s: vals) {
-                Set<String> set = inGraph.get(s);
-                if (set.size() != 1) {
-                    haveOneUp = false;
-                    break;
-                }
-            }
-            if (haveOneUp) {
+            if (!isAllOutsWithMultipleIns(vals)) {
                 return true;
             }
 
-            // divide all the vals into groups by the transaction hash.
-            Map<String, Set<String>> groups = new HashMap<>();
-            for (String s: vals) {
-                String[] k = s.split(":");
-                String hash = k[0];
-                if (!groups.containsKey(hash)) {
-                    Set<String> set = new HashSet<>();
-                    set.add(s);
-                    groups.put(key, set);
-                } else {
-                    Set<String> set = groups.get(key);
-                    set.add(s);
-                }
-            }
-
-            // check each group if it have an doubleSpent item
-            for (String k: groups.keySet()) {
-                boolean allTxnOutOk = true;
-                for (String s: groups.get(k)) {
-                    if (isDoubleSpend(s)) {
-                        allTxnOutOk = false;
-                    }
-                }
-
-                if (allTxnOutOk) {
-                    return true;
-                }
+            if (isAllOutsOkWithMultipleIns(key, vals)) {
+                return true;
             }
         }
 

@@ -408,7 +408,7 @@ public class TransactionData {
             for (int j = 0; j < txnOutList.size(); j++) {
                 TxnOut txnOut = txnOutList.get(j);
                 String key = transaction.txnHash + ":" + String.valueOf(j) + "," + txnOut.userAccount;
-                if (txnOut.userAccount.equals(account) && !utxoGraph.isDoubleSpend(key) && !utxoGraph.isSpent(key)) {
+                if (txnOut.userAccount.equals(account) && !utxoGraph.isSpent(key) && !utxoGraph.isDoubleSpend(key)) {
                     total += txnOut.amount;
                 }
             }
