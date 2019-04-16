@@ -238,10 +238,7 @@ public class TransactionData {
         constructTxnsFromRawTxns(rawTxnsList);
     }
 
-
-    public void init() {
-        transactions = new ArrayList<>();
-
+    public static Txn genesis() {
         List<TxnOut> txnOutList = new ArrayList<>();
         TxnOut txOut = new TxnOut();
         txOut.amount = 1000000000;  //just for testing
@@ -256,7 +253,13 @@ public class TransactionData {
 
         newTxn.txnHash = generateHash(new Gson().toJson(newTxn));
 
-        addTxn(newTxn);
+        return newTxn;
+    }
+
+    public void init() {
+        transactions = new ArrayList<>();
+
+        addTxn(genesis());
     }
 
     public Txn getLast() {
@@ -365,7 +368,7 @@ public class TransactionData {
         return newTxn;
     }
 
-    private String generateHash(String txnStr) {
+    public static String generateHash(String txnStr) {
         String trytes = Converter.asciiToTrytes(txnStr);
 
         byte[] trits = Converter.allocateTritsForTrytes(trytes.length());

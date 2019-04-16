@@ -115,7 +115,7 @@ public class UTXOGraph {
         }
     }
 
-    public void markTheLaterAsDoubleSpend(List<Hash> order, HashMap<String, Hash> txnToTangleMap, Set<String> valSet) {
+    private void markTheLaterAsDoubleSpend(List<Hash> order, HashMap<String, Hash> txnToTangleMap, Set<String> valSet) {
         Map<String, Integer> toSort = new ConcurrentHashMap<>();
         for(String out : valSet) {
             Hash h = txnToTangleMap.get(out);
@@ -144,7 +144,7 @@ public class UTXOGraph {
         }
     }
 
-    private boolean isAllOutsWithMultipleIns(Set<String> vals) {
+    private boolean isAllOutsWithSingleIns(Set<String> vals) {
         // If all the subs have only one 'up', as following, the up MUST have been spent.
         //    *
         //   / \
@@ -152,10 +152,10 @@ public class UTXOGraph {
         for (String s: vals) {
             Set<String> set = inGraph.get(s);
             if (set.size() != 1) {
-                return true;
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     private boolean isAllOutsOkWithMultipleIns(String key, Set<String> vals) {
@@ -167,14 +167,14 @@ public class UTXOGraph {
         // divide all the vals into groups by the transaction hash.
         Map<String, Set<String>> groups = new HashMap<>();
         for (String s: vals) {
-            String[] k = s.split(":");
-            String hash = k[0];
+            String[] out = s.split(":");
+            String hash = out[0];
             if (!groups.containsKey(hash)) {
                 Set<String> set = new HashSet<>();
                 set.add(s);
-                groups.put(key, set);
+                groups.put(hash, set);
             } else {
-                Set<String> set = groups.get(key);
+                Set<String> set = groups.get(hash);
                 set.add(s);
             }
         }
@@ -200,7 +200,7 @@ public class UTXOGraph {
         if (outGraph.containsKey(key)) {
             Set<String> vals = outGraph.get(key);
 
-            if (!isAllOutsWithMultipleIns(vals)) {
+            if (isAllOutsWithSingleIns(vals)) {
                 return true;
             }
 
