@@ -57,7 +57,6 @@ public class CumWeightScore
 
     public static HashMap<Hash, Double> computeParentScore(Map<Hash, Hash> parentGraph, Map<Hash, Set<Hash>> revParentGraph) {
         HashMap<Hash, Double> ret = new HashMap<>();
-        
         for(Hash key : parentGraph.keySet()) {
             Hash start = key;
             Set<Hash> visited = new HashSet<>();
