@@ -5,7 +5,6 @@ cd /code/iota_api/
 if $ENABLE_BATCHING;then
   sed -i "5s/False/True/g" conf  
 fi
-echo $HOST_IP
 if true
 then
   hostip=$(echo $HOST_IP|awk '{print $3}')
