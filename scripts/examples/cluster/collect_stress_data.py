@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import os
 import csv
 import sys
+from sh import  grep,cat,awk
 
 log_file = sys.argv[1]
 file_name = sys.argv[2]
@@ -10,8 +10,7 @@ total_topology = ['3_clique','4_circle','4_clique','7_circle','7_clique','7_brid
 txn_num = [5000,10000,15000,20000]
 
 total_num = []
-cmd = "cat %s |grep -v 15000 |grep -v configure|grep 5000 |awk '{print $7}'"%log_file
-oret = os.popen(cmd,'r',1).read().split()
+oret = awk(grep(grep(grep(cat('%s'%log_file),5000),'-v','configure'),'-v',15000),'{print $7}').split()
 i = 0
 for tps in oret:
     tps_num = tps.replace('/s','')
@@ -19,8 +18,7 @@ for tps in oret:
     i+=1
 
 for tx_nm in txn_num[1:]:
-    cmd = "cat %s |grep -v configure|grep %s |awk '{print $7}'"%(log_file,tx_nm)
-    oret = os.popen(cmd, 'r', 1).read().split()
+    oret = awk(grep(grep(cat('%s'%log_file),tx_nm),'-v','configure'),'{print $7}').split()
     i = 0
     for tps in oret:
         tps_num = tps.replace('/s', '')
