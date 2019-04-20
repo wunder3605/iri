@@ -93,7 +93,7 @@ public class Node {
         this.packetSize = configuration.getTransactionPacketSize();
         this.sendingPacket = new DatagramPacket(new byte[packetSize], packetSize);
         this.sendingHash = new DatagramPacket(new byte[reqHashSize], reqHashSize);
-        this.tipRequestingPacket = new DatagramPacket(new byte[reqHashSize], reqHashSize);
+        this.tipRequestingPacket = new DatagramPacket(new byte[packetSize], packetSize);
 
     }
 
@@ -549,27 +549,30 @@ public class Node {
             while (!shuttingDown.get()) {
 
                 try {
-                    synchronized (tipRequestingPacket) {
+                    synchronized (sendingHash) {
                         com.iota.iri.utils.Pair<Hash, Neighbor> pair = transactionRequester.transactionToRequest(false);
-                        Hash hash = pair.low;
-                        Neighbor neighbor = pair.hi;
-                        System.arraycopy(hash.bytes(), 0, tipRequestingPacket.getData(), 0, reqHashSize);
-                        if (neighbor != null) {
-                            log.info("Request for tx by {}", hash);
-                            neighbor.send(tipRequestingPacket);
-                        } else {
-                            neighbors.forEach(n -> n.send(tipRequestingPacket));
+                        if (pair != null) {
+                            Hash hash = pair.low;
+                            Neighbor neighbor = pair.hi;
+                            System.arraycopy(hash.bytes(), 0, sendingHash.getData(), 0, reqHashSize);
+                            if (neighbor != null) {
+                                log.info("Request for tx by {}", hash);
+                                neighbor.send(sendingHash);
+                            } else {
+                                neighbors.forEach(n -> n.send(sendingHash));
+                            }
                         }
-
-                        // TODO: remove milestone messages
-                        final TransactionViewModel transactionViewModel = TransactionViewModel.fromHash(tangle, milestoneTracker.latestMilestone);
-                        System.arraycopy(transactionViewModel.getBytes(), 0, tipRequestingPacket.getData(), 0, TransactionViewModel.SIZE);
-                        System.arraycopy(transactionViewModel.getHash().bytes(), 0, tipRequestingPacket.getData(), TransactionViewModel.SIZE,
-                                reqHashSize);
-                        //Hash.SIZE_IN_BYTES);
-
-                        neighbors.forEach(n -> n.send(tipRequestingPacket));
                     }
+
+                    // TODO: remove milestone messages
+                    final TransactionViewModel transactionViewModel = TransactionViewModel.fromHash(tangle, milestoneTracker.latestMilestone);
+                    System.arraycopy(transactionViewModel.getBytes(), 0, tipRequestingPacket.getData(), 0, TransactionViewModel.SIZE);
+                    System.arraycopy(transactionViewModel.getHash().bytes(), 0, tipRequestingPacket.getData(), TransactionViewModel.SIZE,
+                            reqHashSize);
+                    //Hash.SIZE_IN_BYTES);
+
+                    neighbors.forEach(n -> n.send(tipRequestingPacket));
+
 
                     long now = System.currentTimeMillis();
                     if ((now - lastTime) > 10000L) {
