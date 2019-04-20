@@ -28,6 +28,7 @@ public class UDPReceiver {
     private final int port;
     private final Node node;
     private final int packetSize;
+    private final int hashSize;
 
     private DatagramSocket socket;
 
@@ -43,6 +44,7 @@ public class UDPReceiver {
         this.node = node;
         this.port = config.getUdpReceiverPort();
         this.packetSize = config.getTransactionPacketSize();
+        this.hashSize = config.getRequestHashSize();
         this.receivingPacket = new DatagramPacket(new byte[packetSize], packetSize);
     }
 
@@ -78,7 +80,8 @@ public class UDPReceiver {
                 try {
                     socket.receive(receivingPacket);
 
-                    if (receivingPacket.getLength() == packetSize) {
+                    if (receivingPacket.getLength() == packetSize || receivingPacket.getLength() == hashSize) {
+                        log.info("Udp Receiving length = {}", receivingPacket.getLength());
 
                         byte[] bytes = Arrays.copyOf(receivingPacket.getData(), receivingPacket.getLength());
                         SocketAddress address = receivingPacket.getSocketAddress();

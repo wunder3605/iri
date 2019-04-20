@@ -170,7 +170,7 @@ public class TransactionValidator {
                         solid = false;
 
                         if (!transactionRequester.isTransactionRequested(hashPointer, milestone)) {
-                            transactionRequester.requestTransaction(hashPointer, milestone);
+                            transactionRequester.requestTransaction(hashPointer, null, milestone);
                             break;
                         }
                     } else {
@@ -288,7 +288,7 @@ public class TransactionValidator {
 
     private boolean checkApproovee(TransactionViewModel approovee) throws Exception {
         if(approovee.getType() == PREFILLED_SLOT) {
-            transactionRequester.requestTransaction(approovee.getHash(), false);
+            transactionRequester.requestTransaction(approovee.getHash(), null, false);
             return false;
         }
         if(approovee.getHash().equals(Hash.NULL_HASH)) {

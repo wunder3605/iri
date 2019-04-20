@@ -2,6 +2,7 @@ package com.iota.iri.network;
 
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
+import com.iota.iri.utils.Pair;
 import com.iota.iri.zmq.MessageQ;
 import com.iota.iri.storage.Tangle;
 import org.apache.commons.lang3.ArrayUtils;
@@ -18,8 +19,8 @@ public class TransactionRequester {
 
     private static final Logger log = LoggerFactory.getLogger(TransactionRequester.class);
     private final MessageQ messageQ;
-    private final Set<Hash> milestoneTransactionsToRequest = new LinkedHashSet<>();
-    private final Set<Hash> transactionsToRequest = new LinkedHashSet<>();
+    private final Map<Hash, Neighbor> milestoneTransactionsToRequest = new HashMap<>();
+    private final Map<Hash, Neighbor> transactionsToRequest = new HashMap<>();
 
     public static final int MAX_TX_REQ_QUEUE_SIZE = 10000;
 
@@ -44,8 +45,8 @@ public class TransactionRequester {
 
     public Hash[] getRequestedTransactions() {
         synchronized (syncObj) {
-            return ArrayUtils.addAll(transactionsToRequest.stream().toArray(Hash[]::new),
-                    milestoneTransactionsToRequest.stream().toArray(Hash[]::new));
+            return ArrayUtils.addAll(transactionsToRequest.keySet().stream().toArray(Hash[]::new),
+                    milestoneTransactionsToRequest.keySet().stream().toArray(Hash[]::new));
         }
     }
 
@@ -55,21 +56,21 @@ public class TransactionRequester {
 
     public boolean clearTransactionRequest(Hash hash) {
         synchronized (syncObj) {
-            boolean milestone = milestoneTransactionsToRequest.remove(hash);
-            boolean normal = transactionsToRequest.remove(hash);
+            boolean milestone = (milestoneTransactionsToRequest.remove(hash) != null);
+            boolean normal = (transactionsToRequest.remove(hash) != null);
             return normal || milestone;
         }
     }
 
-    public void requestTransaction(Hash hash, boolean milestone) throws Exception {
+    public void requestTransaction(Hash hash, Neighbor neighbor, boolean milestone) throws Exception {
         if (!hash.equals(Hash.NULL_HASH) && !TransactionViewModel.exists(tangle, hash)) {
             synchronized (syncObj) {
                 if(milestone) {
                     transactionsToRequest.remove(hash);
-                    milestoneTransactionsToRequest.add(hash);
+                    milestoneTransactionsToRequest.put(hash, neighbor);
                 } else {
-                    if(!milestoneTransactionsToRequest.contains(hash) && !transactionsToRequestIsFull()) {
-                        transactionsToRequest.add(hash);
+                    if(!milestoneTransactionsToRequest.containsKey(hash) && !transactionsToRequestIsFull()) {
+                        transactionsToRequest.put(hash, neighbor);
                     }
                 }
             }
@@ -87,9 +88,9 @@ public class TransactionRequester {
      * @return true if the transaction is in the set of transactions to be requested and false otherwise
      */
     public boolean isTransactionRequested(Hash transactionHash, boolean milestoneRequest) {
-        return (milestoneRequest && milestoneTransactionsToRequest.contains(transactionHash))
-                || (!milestoneRequest && milestoneTransactionsToRequest.contains(transactionHash) ||
-                transactionsToRequest.contains(transactionHash));
+        return (milestoneRequest && milestoneTransactionsToRequest.containsKey(transactionHash))
+                || (!milestoneRequest && milestoneTransactionsToRequest.containsKey(transactionHash) ||
+                transactionsToRequest.containsKey(transactionHash));
     }
 
     private boolean transactionsToRequestIsFull() {
@@ -97,20 +98,21 @@ public class TransactionRequester {
     }
 
 
-    public Hash transactionToRequest(boolean milestone) throws Exception {
+    public Pair<Hash, Neighbor> transactionToRequest(boolean milestone) throws Exception {
         // determine which set of transactions to operate on
-        Set<Hash> primarySet = milestone ? milestoneTransactionsToRequest : transactionsToRequest;
-        Set<Hash> alternativeSet = milestone ? transactionsToRequest : milestoneTransactionsToRequest;
-        Set<Hash> requestSet = primarySet.size() == 0 ? alternativeSet : primarySet;
+        Map<Hash, Neighbor> primaryMap = milestone ? milestoneTransactionsToRequest : transactionsToRequest;
+        Map<Hash, Neighbor> alternativeMap = milestone ? transactionsToRequest : milestoneTransactionsToRequest;
+        Map<Hash, Neighbor> requestMap = primaryMap.size() == 0 ? alternativeMap : primaryMap;
 
         // determine the first hash in our set that needs to be processed
-        Hash hash = null;
+        Map.Entry<Hash, Neighbor> pair = null;
         synchronized (syncObj) {
             // repeat while we have transactions that shall be requested
-            while (requestSet.size() != 0) {
+            while (requestMap.size() != 0) {
                 // remove the first item in our set for further examination
-                Iterator<Hash> iterator = requestSet.iterator();
-                hash = iterator.next();
+                Iterator<Map.Entry<Hash, Neighbor>> iterator = requestMap.entrySet().iterator();
+                pair = iterator.next();
+                Hash hash = pair.getKey();
                 iterator.remove();
 
                 // if we have received the transaction in the mean time ....
@@ -126,7 +128,7 @@ public class TransactionRequester {
                 // ... otherwise -> re-add it at the end of the set ...
                 //
                 // Note: we always have enough space since we removed the element before
-                requestSet.add(hash);
+                requestMap.put(hash, pair.getValue());
 
                 // ... and abort our loop to continue processing with the element we found
                 break;
@@ -134,14 +136,21 @@ public class TransactionRequester {
         }
 
         // randomly drop "non-milestone" transactions so we don't keep on asking for non-existent transactions forever
-        if(random.nextDouble() < P_REMOVE_REQUEST && !requestSet.equals(milestoneTransactionsToRequest)) {
+        if(random.nextDouble() < P_REMOVE_REQUEST && !requestMap.equals(milestoneTransactionsToRequest)) {
             synchronized (syncObj) {
-                transactionsToRequest.remove(hash);
+                if (pair != null) {
+                    transactionsToRequest.remove(pair.getKey());
+                }
             }
         }
 
         // return our result
-        return hash;
+        if (pair == null) {
+            log.info("Noting to request");
+            return null;
+        } else {
+            return new Pair<>(pair.getKey(), pair.getValue());
+        }
     }
 
 }
