@@ -170,6 +170,7 @@ public class TransactionValidator {
                         solid = false;
 
                         if (!transactionRequester.isTransactionRequested(hashPointer, milestone)) {
+                        	log.info("Requesting {}", hashPointer);
                             transactionRequester.requestTransaction(hashPointer, null, milestone);
                             break;
                         }
@@ -288,6 +289,7 @@ public class TransactionValidator {
 
     private boolean checkApproovee(TransactionViewModel approovee) throws Exception {
         if(approovee.getType() == PREFILLED_SLOT) {
+	        log.info("Requesting {}", approovee.getHash());
             transactionRequester.requestTransaction(approovee.getHash(), null, false);
             return false;
         }

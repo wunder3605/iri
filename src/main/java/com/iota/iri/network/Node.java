@@ -1,6 +1,7 @@
 package com.iota.iri.network;
 
 import com.iota.iri.conf.BaseIotaConfig;
+import com.iota.iri.model.persistables.Transaction;
 import com.iota.iri.validator.MilestoneTracker;
 import com.iota.iri.validator.TransactionValidator;
 import com.iota.iri.conf.NodeConfig;
@@ -37,6 +38,7 @@ public class Node {
     private static final Logger log = LoggerFactory.getLogger(Node.class);
     private final int reqHashSize;
     private final int packetSize;
+    private final int broadcastHashSize;
 
 
     private int BROADCAST_QUEUE_SIZE;
@@ -55,6 +57,8 @@ public class Node {
     private final DatagramPacket sendingPacket;
     private final DatagramPacket sendingHash;
     private final DatagramPacket tipRequestingPacket;
+
+    public static final byte[] broadcastFlag = "BCAST".getBytes();
 
     private final ExecutorService executor = Executors.newFixedThreadPool(5);
     private final NodeConfig configuration;
@@ -91,9 +95,10 @@ public class Node {
         this.messageQ = messageQ;
         this.reqHashSize = configuration.getRequestHashSize();
         this.packetSize = configuration.getTransactionPacketSize();
+        this.broadcastHashSize = broadcastFlag.length + configuration.getRequestHashSize();
         this.sendingPacket = new DatagramPacket(new byte[packetSize], packetSize);
-        this.sendingHash = new DatagramPacket(new byte[reqHashSize], reqHashSize);
-        this.tipRequestingPacket = new DatagramPacket(new byte[packetSize], packetSize);
+        this.sendingHash = new DatagramPacket(new byte[broadcastHashSize], broadcastHashSize);
+        this.tipRequestingPacket = new DatagramPacket(new byte[reqHashSize], reqHashSize);
 
     }
 
@@ -227,6 +232,7 @@ public class Node {
                     break;
                 }
                 if (receivedData.length == packetSize) {
+                    log.info("Received transaction..");
                     try {
 
                         //Transaction bytes
@@ -268,20 +274,37 @@ public class Node {
                         neighbor.incInvalidTransactions();
                         break;
                     }
+                } else if (receivedData.length == reqHashSize) {
+                    //Request bytes
+
+                    //add request to reply queue (requestedHash, neighbor)
+                    Hash requestedHash = HashFactory.TRANSACTION.create(receivedData, 0, reqHashSize);
+                    log.info("Received request hash {}..", requestedHash);
+                    /*} else {
+                        //requesting a random tip
+                        requestedHash = Hash.NULL_HASH;
+                    }*/
+
+                    addReceivedDataToReplyQueue(requestedHash, neighbor);
+
+                } else if (receivedData.length == broadcastHashSize) {
+                    byte[] hashBytes = Arrays.copyOfRange(receivedData, broadcastFlag.length, receivedData.length);
+                    Hash requestedHash = HashFactory.TRANSACTION.create(hashBytes, 0, reqHashSize);
+                    try {
+                        /*TransactionViewModel transactionViewModel = TransactionViewModel.fromHash(tangle, requestedHash);
+                        if (transactionViewModel == null) {*/
+                        synchronized (recentSeenBytes) {
+                            if (recentSeenBytes.containValue(requestedHash)) {
+                                log.info("Receiving broadcast hash {}, stored, do nothing else.", requestedHash);
+                            } else {
+                                log.info("Receiving broadcast hash {}, but not stored, begin to requiring...", requestedHash);
+                                transactionRequester.requestTransaction(requestedHash, neighbor, false);
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.error("Error getting random tip.", e);
+                    }
                 }
-
-                //Request bytes
-
-                //add request to reply queue (requestedHash, neighbor)
-                Hash requestedHash;
-                if (receivedData.length == reqHashSize) {
-                    requestedHash = HashFactory.TRANSACTION.create(receivedData, 0, reqHashSize);
-                } else {
-                    //requesting a random tip
-                    requestedHash = Hash.NULL_HASH;
-                }
-
-                addReceivedDataToReplyQueue(requestedHash, neighbor);
 
                 //recentSeenBytes statistics
 
@@ -451,12 +474,12 @@ public class Node {
                 log.error("Error fetching transaction to request.", e);
             }
         } else {
-            log.info("Requesting for tx");
+            log.info("Requesting for tx {}", requestedHash);
             //trytes not found
             if (!requestedHash.equals(Hash.NULL_HASH)/* && rnd.nextDouble() < configuration.getpPropagateRequest()*/) {
                 //request is an actual transaction and missing in request queue add it.
                 try {
-                    transactionRequester.requestTransaction(requestedHash, neighbor, false);
+                    transactionRequester.requestTransaction(requestedHash, null, false);
 
                 } catch (Exception e) {
                     log.error("Error adding transaction to request.", e);
@@ -489,12 +512,13 @@ public class Node {
 
         synchronized (packet) {
             if (packet.equals(sendingPacket)) {
-                log.info("Sending packet");
+                log.info("Sending packet {}", transactionViewModel.getHash());
                 System.arraycopy(transactionViewModel.getBytes(), 0, packet.getData(), 0, TransactionViewModel.SIZE);
                 System.arraycopy(transactionViewModel.getHash().bytes(), 0, packet.getData(), TransactionViewModel.SIZE, reqHashSize);
             } else if (packet.equals(sendingHash)) {
-                log.info("Sending hash");
-                System.arraycopy(transactionViewModel.getHash().bytes(), 0, packet.getData(), 0, reqHashSize);
+                log.info("Sending hash {}", transactionViewModel.getHash());
+                System.arraycopy(broadcastFlag, 0, packet.getData(), 0, broadcastFlag.length);
+                System.arraycopy(transactionViewModel.getHash().bytes(), 0, packet.getData(), broadcastFlag.length, reqHashSize);
             }
             neighbor.send(packet);
         }
@@ -518,11 +542,11 @@ public class Node {
                         for (final Neighbor neighbor : neighbors) {
                             try {
                                 if (from == null) {
-                                    log.info("Transaction from user, broadcast whole tx to all neighbors");
+                                    log.info("Transaction from user, broadcast whole tx to neighbor {}", neighbor.getAddress());
                                     sendPacket(sendingPacket, transactionViewModel, neighbor);
                                 } else {
                                     if (!neighbor.equals(from)) {
-                                        log.info("Transaction from {}, send hash to other neighbors", neighbor.getAddress());
+                                        log.info("Transaction from {}, send hash to other neighbor {}",from.getAddress(), neighbor.getAddress());
                                         sendPacket(sendingHash, transactionViewModel, neighbor);
                                     }
                                 }
@@ -549,29 +573,30 @@ public class Node {
             while (!shuttingDown.get()) {
 
                 try {
-                    synchronized (sendingHash) {
+                    synchronized (tipRequestingPacket) {
                         com.iota.iri.utils.Pair<Hash, Neighbor> pair = transactionRequester.transactionToRequest(false);
                         if (pair != null) {
                             Hash hash = pair.low;
                             Neighbor neighbor = pair.hi;
-                            System.arraycopy(hash.bytes(), 0, sendingHash.getData(), 0, reqHashSize);
+                            log.info("Tip requesting, neighbor = {}, hash = {}", neighbor, hash);
+                            System.arraycopy(hash.bytes(), 0, tipRequestingPacket.getData(), 0, reqHashSize);
                             if (neighbor != null) {
-                                log.info("Request for tx by {}", hash);
-                                neighbor.send(sendingHash);
+                                log.info("Request tx by {} from neighbor {}", hash, neighbor.getAddress());
+                                neighbor.send(tipRequestingPacket);
                             } else {
-                                neighbors.forEach(n -> n.send(sendingHash));
+                                neighbors.forEach(n -> n.send(tipRequestingPacket));
                             }
                         }
                     }
 
-                    // TODO: remove milestone messages
+                    /*// TODO: remove milestone messages
                     final TransactionViewModel transactionViewModel = TransactionViewModel.fromHash(tangle, milestoneTracker.latestMilestone);
                     System.arraycopy(transactionViewModel.getBytes(), 0, tipRequestingPacket.getData(), 0, TransactionViewModel.SIZE);
                     System.arraycopy(transactionViewModel.getHash().bytes(), 0, tipRequestingPacket.getData(), TransactionViewModel.SIZE,
                             reqHashSize);
                     //Hash.SIZE_IN_BYTES);
 
-                    neighbors.forEach(n -> n.send(tipRequestingPacket));
+                    neighbors.forEach(n -> n.send(tipRequestingPacket));*/
 
 
                     long now = System.currentTimeMillis();
@@ -792,18 +817,21 @@ public class Node {
         private final int capacity;
         private final double dropRate;
         private LinkedHashMap<K, V> map;
+        private HashSet<V> values;
         private final SecureRandom rnd = new SecureRandom();
 
         public FIFOCache(int capacity, double dropRate) {
             this.capacity = capacity;
             this.dropRate = dropRate;
             this.map = new LinkedHashMap<>();
+            this.values = new HashSet<>();
         }
 
         public V get(K key) {
             V value = this.map.get(key);
             if (value != null && (rnd.nextDouble() < this.dropRate)) {
                 this.map.remove(key);
+                this.values.remove(value);
                 return null;
             }
             return value;
@@ -818,7 +846,12 @@ public class Node {
                 it.next();
                 it.remove();
             }
+            this.values.add(value);
             return this.map.put(key, value);
+        }
+
+        public boolean containValue(V value) {
+            return this.values.contains(value);
         }
     }
 

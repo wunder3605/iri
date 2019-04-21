@@ -29,6 +29,7 @@ public class UDPNeighbor extends Neighbor {
     @Override
     public void send(DatagramPacket packet) {
         try {
+        	log.info("Sending: to {}, size = {}", getAddress(), packet.getLength());
             packet.setSocketAddress(getAddress());
             socket.send(packet);
             incSentTransactions();
