@@ -612,7 +612,12 @@ public class Node {
                                 TransactionViewModel.getNumberOfStoredTransactions(tangle));
                     }
 
-                    Thread.sleep(5000);
+                    if (transactionRequester.getRequestedTransactions().length != 0) {
+                        Thread.sleep(10);
+                    }
+                    else {
+                        Thread.sleep(1000);
+                    }
                 } catch (final Exception e) {
                     log.error("Tips Requester Thread Exception:", e);
                 }

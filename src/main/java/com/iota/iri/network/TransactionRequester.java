@@ -19,8 +19,8 @@ public class TransactionRequester {
 
     private static final Logger log = LoggerFactory.getLogger(TransactionRequester.class);
     private final MessageQ messageQ;
-    private final Map<Hash, Neighbor> milestoneTransactionsToRequest = new HashMap<>();
-    private final Map<Hash, Neighbor> transactionsToRequest = new HashMap<>();
+    private final Map<Hash, Neighbor> milestoneTransactionsToRequest = new LinkedHashMap<>();
+    private final Map<Hash, Neighbor> transactionsToRequest = new LinkedHashMap<>();
 
     public static final int MAX_TX_REQ_QUEUE_SIZE = 10000;
 
@@ -146,7 +146,6 @@ public class TransactionRequester {
 
         // return our result
         if (pair == null) {
-            log.info("Noting to request");
             return null;
         } else {
             return new Pair<>(pair.getKey(), pair.getValue());

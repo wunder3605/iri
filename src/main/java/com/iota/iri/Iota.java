@@ -13,7 +13,7 @@ import com.iota.iri.network.TransactionRequester;
 import com.iota.iri.network.UDPReceiver;
 import com.iota.iri.network.replicator.Replicator;
 import com.iota.iri.pluggables.utxo.TransactionData;
-import com.iota.iri.service.TipsSolidifier;
+//import com.iota.iri.service.TipsSolidifier;
 import com.iota.iri.service.tipselection.EntryPointSelector;
 import com.iota.iri.service.tipselection.RatingCalculator;
 import com.iota.iri.service.tipselection.TailFinder;
@@ -62,7 +62,7 @@ public class Iota {
     public final MilestoneTracker milestoneTracker;
     public final Tangle tangle;
     public final TransactionValidator transactionValidator;
-    public final TipsSolidifier tipsSolidifier;
+    //public final TipsSolidifier tipsSolidifier;
     public final TransactionRequester transactionRequester;
     public final Node node;
     public final UDPReceiver udpReceiver;
@@ -87,7 +87,7 @@ public class Iota {
         replicator = new Replicator(node, configuration);
         udpReceiver = new UDPReceiver(node, configuration);
         ledgerValidator = createLedgerValidator();
-        tipsSolidifier = new TipsSolidifier(tangle, transactionValidator, tipsViewModel);
+        //tipsSolidifier = new TipsSolidifier(tangle, transactionValidator, tipsViewModel);
         tipsSelector = createTipSelector(configuration);
         TransactionData.getInstance().setTangle(tangle);
     }
@@ -107,7 +107,7 @@ public class Iota {
         }
         milestoneTracker.init(SpongeFactory.Mode.CURLP27, 1, ledgerValidator);
         transactionValidator.init(configuration.isTestnet(), configuration.getMwm());
-        tipsSolidifier.init();
+        //tipsSolidifier.init();
         transactionRequester.init(configuration.getpRemoveRequest());
         udpReceiver.init();
         replicator.init();
@@ -142,7 +142,7 @@ public class Iota {
 
     public void shutdown() throws Exception {
         milestoneTracker.shutDown();
-        tipsSolidifier.shutdown();
+        //tipsSolidifier.shutdown();
         node.shutdown();
         udpReceiver.shutdown();
         replicator.shutdown();

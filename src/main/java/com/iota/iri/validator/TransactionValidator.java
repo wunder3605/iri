@@ -151,6 +151,9 @@ public class TransactionValidator {
         if(fromHash(tangle, hash).isSolid()) {
             return true;
         }
+        if (hash == tangle.getLastPivot()) {
+            return false;
+        }
         Set<Hash> analyzedHashes = new HashSet<>(Collections.singleton(Hash.NULL_HASH));
         if(maxProcessedTransactions != Integer.MAX_VALUE) {
             maxProcessedTransactions += analyzedHashes.size();
@@ -170,7 +173,7 @@ public class TransactionValidator {
                         solid = false;
 
                         if (!transactionRequester.isTransactionRequested(hashPointer, milestone)) {
-                        	log.info("Requesting {}", hashPointer);
+                        	//log.info("Requesting {}, hash = {}", hashPointer, hash);
                             transactionRequester.requestTransaction(hashPointer, null, milestone);
                             break;
                         }
@@ -247,13 +250,16 @@ public class TransactionValidator {
 
     public void updateStatus(TransactionViewModel transactionViewModel) throws Exception {
         transactionRequester.clearTransactionRequest(transactionViewModel.getHash());
+        //log.info("before tips {}, size = {}", tipsViewModel.getTips().toString(), tipsViewModel.getTips().size());
         if(transactionViewModel.getApprovers(tangle).size() == 0) {
             tipsViewModel.addTipHash(transactionViewModel.getHash());
         }
         tipsViewModel.removeTipHash(transactionViewModel.getTrunkTransactionHash());
         tipsViewModel.removeTipHash(transactionViewModel.getBranchTransactionHash());
+        //log.info("after tips {}, size = {}", tipsViewModel.getTips().toString(), tipsViewModel.getTips().size());
 
         if(quickSetSolid(transactionViewModel)) {
+            log.info("quickSetSolid...");
             transactionViewModel.update(tangle, "solid|height");
             tipsViewModel.setSolid(transactionViewModel.getHash());
             addSolidTransaction(transactionViewModel.getHash());
@@ -271,17 +277,20 @@ public class TransactionValidator {
 
     private boolean quickSetSolid(final TransactionViewModel transactionViewModel) throws Exception {
         if(!transactionViewModel.isSolid()) {
-            boolean solid = true;
-            if (!checkApproovee(transactionViewModel.getTrunkTransaction(tangle))) {
-                solid = false;
-            }
-            if (!checkApproovee(transactionViewModel.getBranchTransaction(tangle))) {
-                solid = false;
-            }
-            if(solid) {
-                transactionViewModel.updateSolid(true);
-                transactionViewModel.updateHeights(tangle);
-                return true;
+            //log.info("tx hash {}, genesis {}, {}", transactionViewModel.getHash(), tangle.getLastPivot(), transactionViewModel.getHash() != tangle.getLastPivot());
+            if (transactionViewModel.getHash() != tangle.getLastPivot()) {
+                boolean solid = true;
+                if (!checkApproovee(transactionViewModel.getTrunkTransaction(tangle))) {
+                    solid = false;
+                }
+                if (!checkApproovee(transactionViewModel.getBranchTransaction(tangle))) {
+                    solid = false;
+                }
+                if(solid) {
+                    transactionViewModel.updateSolid(true);
+                    transactionViewModel.updateHeights(tangle);
+                    return true;
+                }
             }
         }
         return false;

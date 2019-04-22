@@ -1,3 +1,4 @@
+/*
 package com.iota.iri.service;
 
 import com.iota.iri.validator.TransactionValidator;
@@ -82,3 +83,4 @@ public class TipsSolidifier {
 
     }
 }
+*/
