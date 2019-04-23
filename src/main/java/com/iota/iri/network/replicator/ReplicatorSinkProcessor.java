@@ -1,5 +1,8 @@
 package com.iota.iri.network.replicator;
 
+import com.iota.iri.conf.TestnetConfig;
+import com.iota.iri.network.Neighbor;
+import com.iota.iri.network.Node;
 import com.iota.iri.network.TCPNeighbor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +24,8 @@ class ReplicatorSinkProcessor implements Runnable {
     private final ReplicatorSinkPool replicatorSinkPool;
     private final int port;
     private int transactionPacketSize;
+    private int reqHashSize;
+    private int broadcastHashSize;
 
     public ReplicatorSinkProcessor(final TCPNeighbor neighbor,
                                    final ReplicatorSinkPool replicatorSinkPool,
@@ -29,6 +34,8 @@ class ReplicatorSinkProcessor implements Runnable {
         this.replicatorSinkPool = replicatorSinkPool;
         this.port = port;
         this.transactionPacketSize = transactionPacketSize;
+        this.reqHashSize = TestnetConfig.Defaults.REQUEST_HASH_SIZE;
+        this.broadcastHashSize = reqHashSize + Node.broadcastFlag.length;
     }
 
     @Override
@@ -86,18 +93,26 @@ class ReplicatorSinkProcessor implements Runnable {
                                         && (neighbor.getSource() != null && neighbor.getSource().isConnected())) {
 
                                         byte[] bytes = message.array();
+                                        log.info("bytes {}", bytes);
 
-                                        if (bytes.length == transactionPacketSize) {
+                                        if (bytes.length == transactionPacketSize || bytes.length == reqHashSize || bytes.length == broadcastHashSize) {
                                             try {
                                                 CRC32 crc32 = new CRC32();
-                                                crc32.update(message.array());
+                                                crc32.update(bytes);
                                                 String crc32String = Long.toHexString(crc32.getValue());
                                                 while (crc32String.length() < CRC32_BYTES) {
                                                     crc32String = "0"+crc32String;
                                                 }
-                                                out.write(message.array());
-                                                out.write(crc32String.getBytes());
+
+                                                /*out.write(bytes);
+                                                out.write(crc32String.getBytes());*/
+                                                byte[] crc32Bytes = crc32String.getBytes();
+                                                byte[] c = new byte[bytes.length + crc32Bytes.length];
+                                                System.arraycopy(bytes, 0, c, 0, bytes.length);
+                                                System.arraycopy(crc32Bytes, 0, c, bytes.length, crc32Bytes.length);
+                                                out.write(c);
                                                 out.flush();
+                                                log.info("Have send to {}, size = {}", neighbor.getSink().getInetAddress(), bytes.length);
                                                 neighbor.incSentTransactions();
                                             } catch (IOException e2) {
                                                 if (!neighbor.getSink().isClosed() && neighbor.getSink().isConnected()) {

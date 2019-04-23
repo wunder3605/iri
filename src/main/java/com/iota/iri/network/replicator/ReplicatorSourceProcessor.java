@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.util.Arrays;
 import java.util.List;
 import java.util.zip.CRC32;
 
@@ -28,9 +29,11 @@ class ReplicatorSourceProcessor implements Runnable {
     private final boolean testnet;
     private final ReplicatorSinkPool replicatorSinkPool;
     private final int packetSize;
+    private int reqHashSize;
+    private int broadcastHashSize;
 
     private boolean existingNeighbor;
-    
+
     private TCPNeighbor neighbor;
 
     public ReplicatorSourceProcessor(final ReplicatorSinkPool replicatorSinkPool,
@@ -46,6 +49,8 @@ class ReplicatorSourceProcessor implements Runnable {
         this.packetSize = testnet
                 ? TestnetConfig.Defaults.PACKET_SIZE
                 : MainnetConfig.Defaults.PACKET_SIZE;
+        this.reqHashSize = TestnetConfig.Defaults.REQUEST_HASH_SIZE;
+        this.broadcastHashSize = reqHashSize + Node.broadcastFlag.length;
     }
 
     @Override
@@ -71,7 +76,7 @@ class ReplicatorSourceProcessor implements Runnable {
                             neighbor = n;
                         }
                     });
-            
+
             if (!existingNeighbor) {
                 int maxPeersAllowed = maxPeers;
                 if (!testnet || Neighbor.getNumPeers() >= maxPeersAllowed) {
@@ -97,58 +102,79 @@ class ReplicatorSourceProcessor implements Runnable {
                     Neighbor.incNumPeers();
                 }
             }
-            
+
             if ( neighbor.getSource() != null ) {
                 log.info("Source {} already connected", inetSocketAddress.getAddress().getHostAddress());
                 finallyClose = false;
                 return;
             }
             neighbor.setSource(connection);
-            
+
             // Read neighbors tcp listener port number.
             InputStream stream = connection.getInputStream();
             offset = 0;
+            log.info("before read port, offset {}", offset);
             while (((count = stream.read(data, offset, ReplicatorSinkPool.PORT_BYTES - offset)) != -1) && (offset < ReplicatorSinkPool.PORT_BYTES)) {
                 offset += count;
             }
-          
+            log.info("after read port, offset {}", offset);
+
             if ( count == -1 || connection.isClosed() ) {
                 log.error("Did not receive neighbors listener port");
                 return;
             }
-            
+
             byte [] pbytes = new byte [10];
             System.arraycopy(data, 0, pbytes, 0, ReplicatorSinkPool.PORT_BYTES);
             neighbor.setTcpPort((int)Long.parseLong(new String(pbytes)));
-            
+
             if (neighbor.getSink() == null) {
                 log.info("Creating sink for {}", neighbor.getHostAddress());
                 replicatorSinkPool.createSink(neighbor);
-            }           
-            
+            }
+
             if (connection.isConnected()) {
                 log.info("----- NETWORK INFO ----- Source {} is connected", inetSocketAddress.getAddress().getHostAddress());
             }
-            
+
             connection.setSoTimeout(0);  // infinite timeout - blocking read
 
             offset = 0;
             while (!shutdown && !neighbor.isStopped()) {
-
-                while ( ((count = stream.read(data, offset, (packetSize- offset + ReplicatorSinkProcessor.CRC32_BYTES))) != -1)
-                        && (offset < (packetSize + ReplicatorSinkProcessor.CRC32_BYTES))) {
+                log.info("Before received.....");
+                while (true) {
+                    log.info("111");
+                    count = stream.read(data, offset, (packetSize - offset + ReplicatorSinkProcessor.CRC32_BYTES));
+                    log.info("222: count = {}, offset = {}", count, offset);
+                    /*if ((count != -1) && (offset < (packetSize + ReplicatorSinkProcessor.CRC32_BYTES))) {
+                        log.info("looping...");
+                        offset += count;
+                    } else {
+                        log.info("outing...");
+                        break;
+                    }*/
                     offset += count;
+                    if (offset == packetSize + ReplicatorSinkProcessor.CRC32_BYTES || offset == reqHashSize + ReplicatorSinkProcessor.CRC32_BYTES
+                    || offset == broadcastHashSize + ReplicatorSinkProcessor.CRC32_BYTES) {
+                        log.info("outing...");
+                        break;
+                    } else {
+                        log.info("looping...");
+                    }
                 }
-              
+                int dataLen = offset;
+                int realDataLen = dataLen - ReplicatorSinkProcessor.CRC32_BYTES;
+                log.info("Received {}, size = {}", data, dataLen);
+
                 if ( count == -1 || connection.isClosed() ) {
                     break;
                 }
-                
+
                 offset = 0;
 
                 try {
                     CRC32 crc32 = new CRC32();
-                    for (int i=0; i<packetSize; i++) {
+                    for (int i=0; i< realDataLen; i++) {
                         crc32.update(data[i]);
                     }
                     String crc32String = Long.toHexString(crc32.getValue());
@@ -156,16 +182,17 @@ class ReplicatorSourceProcessor implements Runnable {
                         crc32String = "0"+crc32String;
                     }
                     byte [] crc32Bytes = crc32String.getBytes();
-                    
+
                     boolean crcError = false;
                     for (int i=0; i<ReplicatorSinkProcessor.CRC32_BYTES; i++) {
-                        if (crc32Bytes[i] != data[packetSize + i]) {
+                        if (crc32Bytes[i] != data[realDataLen + i]) {
                             crcError = true;
                             break;
                         }
                     }
                     if (!crcError) {
-                        node.preProcessReceivedData(data, address, "tcp");
+                        byte[] mesg = Arrays.copyOfRange(data, 0, realDataLen);
+                        node.preProcessReceivedData(mesg, address, "tcp");
                     }
                 }
                   catch (IllegalStateException e) {
@@ -188,9 +215,9 @@ class ReplicatorSourceProcessor implements Runnable {
                     neighbor.setSource(null);
                     neighbor.setSink(null);
                     //if (!neighbor.isFlagged() ) {
-                    //   Node.instance().getNeighbors().remove(neighbor);   
+                    //   Node.instance().getNeighbors().remove(neighbor);
                     //}
-                }                   
+                }
             }
         }
     }

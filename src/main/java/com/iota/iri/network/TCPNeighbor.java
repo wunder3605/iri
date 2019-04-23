@@ -92,6 +92,7 @@ public class TCPNeighbor extends Neighbor {
             log.info("Sendqueue size: {}",sendQueue.size());
             byte[] bytes = packet.getData().clone();
             sendQueue.add(ByteBuffer.wrap(bytes));
+            log.info("After Sendqueue size: {}, data {}",sendQueue.size(), bytes.length);
         }
 
     }
