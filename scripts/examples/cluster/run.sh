@@ -39,11 +39,11 @@ do
         sudo python data_generate.py ${DATA}
 
         # configure iri
-        python server_deploy_batch.py iri
+        python server_deploy_batch.py iri v0.1-streamnet 
         sleep 2
 
         # configure cli
-        python server_deploy_batch.py cli true
+        python server_deploy_batch.py cli v0.1-streamnet true
         sleep 2
 
         # configure topology
@@ -70,7 +70,7 @@ do
         sleep 2
 
         # configure iri
-        python server_deploy_batch.py clear
+        python server_deploy_batch.py clear v0.1-streamnet
         sleep  300
     done
 done
