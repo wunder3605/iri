@@ -3,6 +3,7 @@
 import sys,os
 import re
 import sh
+import ast
 from multiprocessing.dummy import Pool as ThreadPool
 cmd =  sh.Command("/usr/local/bin/pssh")
 pycmd = sh.Command("/usr/bin/python")
@@ -43,7 +44,7 @@ def deploy_iri_server_method(*args):
     if int(num_exist):
         source_add = total_ip_info[ip_address]+':14700'
         ret_nerighbors = pycmd('add_neighbors_batch.py','get',source_add).strip()
-        nerighbors_info = eval(ret_nerighbors.encode('utf-8'))
+        nerighbors_info = ast.literal_eval(ret_nerighbors.encode('utf-8'))
         total_neighbors = nerighbors_info[u'neighbors:']
         total_neighbors_info = [x.replace('tcp://','') for x in total_neighbors]
         if len(total_neighbors_info):
