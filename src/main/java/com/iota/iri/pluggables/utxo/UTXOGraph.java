@@ -13,7 +13,12 @@ import com.iota.iri.model.Hash;
 import static java.util.stream.Collectors.*;
 import static java.util.Map.Entry.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class UTXOGraph {
+
+    private static final Logger log = LoggerFactory.getLogger(UTXOGraph.class);
 
     class TxnBlock {
         public int pos;
@@ -140,6 +145,7 @@ public class UTXOGraph {
             if(i>0) {
                 doubleSpendSet.add(key);
             } else if(sorted.get(key).equals(100000)) {
+                log.info("[zhaoming] why come here!");
                 doubleSpendSet.add(key);
             }
             i++;
