@@ -39,11 +39,6 @@ type NodeDetailRequest struct {
 type OCli struct {
 }
 
-type AddAtInfo interface {
-	AddAttestationInfoFunction(_data []byte)Message
-	GetRankFunction(_data []byte) Message
-}
-
 func (o *OCli)AddAttestationInfoFunction(request *AddNodeRequest)Message{
 	mess:=Message{}
 
@@ -73,7 +68,7 @@ func (o *OCli)GetRankFunction(request *QueryNodesRequest)Message{
 }
 
 func (o *OCli) QueryNodeDetail(request *NodeDetailRequest) Message {
-	if (request.RequestUrl == "") {
+	if request.RequestUrl == "" {
 		return Message{Code: 0, Message: "RequestUrl is empty"}
 	}
 	result,err := httpGet(request.RequestUrl,request.RequestData);
@@ -102,5 +97,5 @@ func httpGet(url string, param string) (string, error) {
 	}
 	body, _ := ioutil.ReadAll(res.Body)
 
-	return string(body), nil;
+	return string(body), nil
 }
