@@ -1,7 +1,8 @@
 import NotFound from './views/404.vue'
 import Home from './views/Home.vue'
-import Approve from './views/nav1/Approve.vue'
-import Form from './views/nav1/LinkMap.vue'
+import Leviatom from './views/nav1/Leviatom.vue'
+import StreamNet from "./views/nav1/StreamNet";
+import NetCoin from "./views/nav1/NetCoin";
 let routes = [
     {
         path: '/404',
@@ -13,10 +14,11 @@ let routes = [
         path: '/',
         component: Home,
         name: 'Functioin List',
-        iconCls: 'el-icon-message',//图标样式class
+        iconCls: 'el-icon-share',//图标样式class
         children: [
-            { path: '/approve', component: Approve, name: 'Approve' },
-            { path: '/linkMap', component: Form, name: 'Link-Map' },
+            { path: '/leviatom', component: Leviatom, name: 'Leviatom' },
+            { path: "/streamNet", component: StreamNet, name: "StreamNet" },
+            { path: "/netCoin", component: NetCoin, name: "NetCoin" },
         ]
     },
     {

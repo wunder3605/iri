@@ -65,6 +65,10 @@ import java.util.stream.IntStream;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 
+import com.iota.iri.pluggables.utxo.BatchTxns;
+import com.iota.iri.pluggables.utxo.NodeFormatted;
+import com.iota.iri.pluggables.tee.TEEFormatted;
+
 import static io.undertow.Handlers.path;
 
 @SuppressWarnings("unchecked")
@@ -323,7 +327,23 @@ public class API {
                     final List<String> hashes = getParameterAsList(request,"hashes", HASH_SIZE);
                     return getTrytesStatement(hashes);
                 }
-
+                case "getBlockContent": {
+                    final List<String> hashes = getParameterAsList(request,"hashes", HASH_SIZE);
+                    LocalInMemoryGraphProvider prov = (LocalInMemoryGraphProvider)instance.tangle.getPersistenceProvider("LOCAL_GRAPH");
+                    List<Hash> list = prov.getHashesFromBundle(hashes);
+                    return getBlockContentStatement(list);
+                }
+                case "getDAG": {
+                    String type = getParameterAsString(request, "type");
+                    return getDAGStatement(type);
+                }
+                case "getUTXO": {
+                    String type = getParameterAsString(request, "type");
+                    return getUTXOStatement(type);
+                }
+                case "getTotalOrder": {
+                    return getTotalOrderStatement();
+                }
                 case "interruptAttachingToTangle": {
                     return interruptAttachingToTangleStatement();
                 }
@@ -541,6 +561,12 @@ public class API {
         return result;
     }
 
+    private String getParameterAsString(Map<String, Object> request, String paramName) throws ValidationException {
+        validateParamExists(request, paramName);
+        String result = (String) request.get(paramName);
+        return result;
+    }
+
     private void validateTrytes(String paramName, int size, String result) throws ValidationException {
         if (!validTrytes(result,size,ZERO_LENGTH_NOT_ALLOWED)) {
             throw new ValidationException("Invalid " + paramName + " input");
@@ -627,6 +653,71 @@ public class API {
             return ErrorResponse.create(overMaxErrorMessage);
         }
         return GetTrytesResponse.create(elements);
+    }
+
+
+    // FIXME add comments
+    private synchronized AbstractResponse getBlockContentStatement(List<Hash> hashes) throws Exception {
+        
+
+        final List<String> elements = new LinkedList<>();
+        String info = "";
+        for (final Hash hash : hashes) {
+            final TransactionViewModel transactionViewModel = TransactionViewModel.fromHash(instance.tangle, hash);
+            if (transactionViewModel != null) {
+                byte[] sigTrits = transactionViewModel.getSignature();
+                String sigTrytes = Converter.trytes(sigTrits);
+                String txnInfo = Converter.trytesToAscii(sigTrytes);
+                Pattern pattern = Pattern.compile("\\{.*\\}");
+                Matcher matcher = pattern.matcher(txnInfo);
+                if (matcher.find()) {
+                    LocalInMemoryGraphProvider prov = (LocalInMemoryGraphProvider)instance.tangle.getPersistenceProvider("LOCAL_GRAPH");
+                    double score = prov.getScore(hash);
+                    double pScore = prov.getParentScore(hash);
+                    BatchTxns tx = new Gson().fromJson(matcher.group(0), BatchTxns.class);
+                    NodeFormatted fmt = new NodeFormatted();
+                    fmt.txns = tx;
+                    fmt.score = score;
+                    fmt.pScore = pScore;
+                    elements.add(new Gson().toJson(fmt));
+                } else {
+                    LocalInMemoryGraphProvider prov = (LocalInMemoryGraphProvider)instance.tangle.getPersistenceProvider("LOCAL_GRAPH");
+                    double score = prov.getScore(hash);
+                    double pScore = prov.getParentScore(hash);
+                    TEEFormatted fmt = new TEEFormatted();
+                    fmt.score = score;
+                    fmt.pScore = pScore;
+                    String decoded = java.net.URLDecoder.decode(StringUtils.trim(txnInfo), StandardCharsets.UTF_8.name());
+                    BatchTee tee = new Gson().fromJson(decoded, BatchTee.class);
+                    fmt.tee = tee;
+                    elements.add(new Gson().toJson(fmt));
+                }
+            }
+        }
+        if (elements.size() > maxGetTrytes){
+            return ErrorResponse.create(overMaxErrorMessage);
+        }
+        return GetTrytesResponse.create(elements);
+    }
+
+    // FIXME add comments
+    private synchronized AbstractResponse getDAGStatement(String type) throws Exception {
+        LocalInMemoryGraphProvider prov = (LocalInMemoryGraphProvider)instance.tangle.getPersistenceProvider("LOCAL_GRAPH");
+        String graph = prov.printGraph(prov.getGraph(), type);
+        return GetDAGResponse.create(graph);
+    }
+
+    // FIXME add comments
+    private synchronized AbstractResponse getUTXOStatement(String type) throws Exception {
+        String graph = TransactionData.getInstance().getUTXOGraph(type);
+        return GetDAGResponse.create(graph);
+    }
+    
+    // FIXME add comments
+    private synchronized AbstractResponse getTotalOrderStatement() throws Exception {
+        LocalInMemoryGraphProvider prov = (LocalInMemoryGraphProvider)instance.tangle.getPersistenceProvider("LOCAL_GRAPH");
+        List<Hash> order = prov.totalTopOrder();
+        return GetTotalOrderResponse.create(order);
     }
 
     private static int counterGetTxToApprove = 0;
