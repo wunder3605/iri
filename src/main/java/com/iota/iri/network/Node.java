@@ -79,10 +79,11 @@ public class Node {
     private static AtomicLong sendPacketsTimer = new AtomicLong(0L);
 
     private ConcurrentHashMap<Hash, Map<Integer, Pair<TransactionViewModel, Neighbor>>> bundleCache;
-    private Set<Hash> hashesToRequest;
 
     public static final ConcurrentSkipListSet<String> rejectedAddresses = new ConcurrentSkipListSet<String>();
     private DatagramSocket udpSocket;
+
+    private boolean optimizeNetworkEnabled;
 
     public Node(final Tangle tangle, final TransactionValidator transactionValidator, final TransactionRequester transactionRequester, final TipsViewModel tipsViewModel, final MilestoneTracker milestoneTracker, final MessageQ messageQ, final NodeConfig configuration
     ) {
@@ -97,8 +98,8 @@ public class Node {
         int packetSize = configuration.getTransactionPacketSize();
         this.sendingPacket = new DatagramPacket(new byte[packetSize], packetSize);
         this.tipRequestingPacket = new DatagramPacket(new byte[packetSize], packetSize);
-        this.bundleCache = new ConcurrentHashMap<Hash, Map<Integer, Pair<TransactionViewModel, Neighbor>>>();
-        this.hashesToRequest = new HashSet<>();
+        this.bundleCache = new ConcurrentHashMap<>();
+        this.optimizeNetworkEnabled = configuration.isOptimizeNetworkEnabled();
     }
 
     public void init() throws Exception {
