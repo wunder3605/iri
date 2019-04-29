@@ -288,8 +288,12 @@ public class TransactionValidator {
     }
 
     private boolean checkApproovee(TransactionViewModel approovee, TransactionViewModel transactionViewModel) throws Exception {
-        Hash genesis = ((LocalInMemoryGraphProvider)tangle.getPersistenceProvider("LOCAL_GRAPH")).getGenesis();
-        if(approovee.getType() == PREFILLED_SLOT && transactionViewModel.getHash() != genesis) {
+        Hash genesis = null;
+        LocalInMemoryGraphProvider provider = (LocalInMemoryGraphProvider)tangle.getPersistenceProvider("LOCAL_GRAPH");
+        if (provider != null) {
+            genesis = provider.getGenesis();
+        }
+        if(approovee.getType() == PREFILLED_SLOT && (genesis == null || transactionViewModel.getHash() != genesis)) {
             transactionRequester.requestTransaction(approovee.getHash(), false);
             return false;
         }
