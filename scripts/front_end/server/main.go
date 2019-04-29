@@ -13,7 +13,6 @@ func main() {
 	http.HandleFunc("/QueryNodes", QueryNodes)
 	http.HandleFunc("/QueryNodeDetail", QueryNodeDetail)
 	err := http.ListenAndServe("0.0.0.0:8000", nil)
-
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -27,9 +26,7 @@ func AddNode(writer http.ResponseWriter, request *http.Request){
 		request.Body.Close()
 	}
 
-	var o v.OCli
-	response:=o.AddAttestationInfoFunction(addNodeRequest)
-
+	response:=v.AddAttestationInfoFunction(addNodeRequest)
 	if err := json.NewEncoder(writer).Encode(response); err != nil {
 		fmt.Println(err)
 	}
@@ -43,9 +40,7 @@ func QueryNodes(writer http.ResponseWriter, request *http.Request){
 		request.Body.Close()
 	}
 
-	var o v.OCli
-	response:=o.GetRankFunction(queryNodesRequest)
-
+	response := v.GetRankFunction(queryNodesRequest)
 	if err := json.NewEncoder(writer).Encode(response); err != nil {
 		fmt.Println(err)
 	}
@@ -59,8 +54,7 @@ func QueryNodeDetail(writer http.ResponseWriter, request *http.Request) {
 		request.Body.Close()
 	}
 
-	var o v.OCli
-	response := o.QueryNodeDetail(detailRequest)
+	response := v.QueryNodeDetails(detailRequest)
 	if err := json.NewEncoder(writer).Encode(response); err != nil {
 		fmt.Println(err)
 	}

@@ -36,10 +36,8 @@ type NodeDetailRequest struct {
 	RequestData string `json:"requestData,omitempty"`
 }
 
-type OCli struct {
-}
 
-func (o *OCli)AddAttestationInfoFunction(request *AddNodeRequest)Message{
+func AddAttestationInfoFunction(request *AddNodeRequest)Message{
 	mess:=Message{}
 
 	info:=make([]string,3)
@@ -55,7 +53,7 @@ func (o *OCli)AddAttestationInfoFunction(request *AddNodeRequest)Message{
 	return mess
 }
 
-func (o *OCli)GetRankFunction(request *QueryNodesRequest)Message{
+func GetRankFunction(request *QueryNodesRequest)Message{
 	mess:=Message{}
 	teescore,teectx,err1:=nr.GetRank("",request.Period,request.NumRank)
 	if teectx==nil||err1!=nil||teescore==nil{
@@ -67,7 +65,7 @@ func (o *OCli)GetRankFunction(request *QueryNodesRequest)Message{
 	return mess
 }
 
-func (o *OCli) QueryNodeDetail(request *NodeDetailRequest) Message {
+func QueryNodeDetails(request *NodeDetailRequest) Message {
 	if request.RequestUrl == "" {
 		return Message{Code: 0, Message: "RequestUrl is empty"}
 	}
