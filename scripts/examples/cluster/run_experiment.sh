@@ -1,6 +1,6 @@
 #!/bin/bash
 
-starttime=`date +'%Y-%m-%d %H:%M:%S'`
+starttime=$(date +%s)
 TOPOLOGY=$1
 echo $TOPOLOGY
 sudo cp ../../iota_deploy/server_deploy_batch.py ./
@@ -11,7 +11,5 @@ python server_deploy_batch.py iri $2
 python server_deploy_batch.py cli $2 $3
 python server_deploy_batch.py add
 sleep 10
-endtime=`date +'%Y-%m-%d %H:%M:%S'`
-start_seconds=$(date --date="$starttime" +%s);
-end_seconds=$(date --date="$endtime" +%s);
-echo "run time: "$((end_seconds-start_seconds))"s"
+endtime=$(date +%s)
+echo "run time: "$((endtime-starttime))"s"
