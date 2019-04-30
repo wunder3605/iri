@@ -7,6 +7,7 @@ import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashFactory;
 import com.iota.iri.model.HashId;
+import com.iota.iri.service.tipselection.impl.CumulativeWeightMemCalculator;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import com.iota.iri.utils.collections.interfaces.UnIterableMap;
@@ -343,7 +344,7 @@ public class CumulativeWeightMemCalculatorTest {
 
     //Simple recursive algorithm that maps each tx hash to its approvers' hashes
     private static Set<HashId> updateApproversRecursively(Hash txHash, Map<HashId, Set<HashId>> txToApprovers,
-                                                        Set<HashId> analyzedTips) throws Exception {
+                                                          Set<HashId> analyzedTips) throws Exception {
         Set<HashId> approvers;
         if (analyzedTips.add(txHash)) {
             approvers = new HashSet<>(Collections.singleton(txHash));
