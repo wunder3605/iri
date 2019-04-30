@@ -274,7 +274,7 @@ def get_dag():
         f = open(file_save, 'w')
         f.write(resp[u'dag'])
         f.close()
-    return resp[u'dag'] 
+    return resp[u'dag']
 
 @app.route('/get_utxo', methods=['GET'])
 def get_utxo():

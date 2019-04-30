@@ -10,8 +10,8 @@ for account in {a..z} {A..Z}
 do
     balances_1[$account]=$(curl -s -X GET http://127.0.0.1:5000/get_balance -H 'Content-Type: application/json' -H 'cache-control: no-cache' -d "{\"account\": \"$account\"}")
     balances_2[$account]=$(curl -s -X GET http://127.0.0.1:6000/get_balance -H 'Content-Type: application/json' -H 'cache-control: no-cache' -d "{\"account\": \"$account\"}")
-    total_1=$((total_1+balances_1[$account]))
-    total_2=$((total_2+balances_2[$account]))
+    total_1=$((total_1+balances_1[account]))
+    total_2=$((total_2+balances_2[account]))
     if [ ${balances_1[$account]} != ${balances_2[$account]} ] ; then
         echo "Balances of" $account "in node1 and node2 are different:" ${balances_1[$account]} -- ${balances_2[$account]}
         FLAG="true"
