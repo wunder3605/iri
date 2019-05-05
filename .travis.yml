@@ -38,8 +38,8 @@ install:
     - sudo pip install sh
     - sudo python -c "import six; print(six.__version__)" 
     - sudo pip install --upgrade 'Django<1.5'
-    - pip install mock --upgrade
-    - pip install six --upgrade
+    - sudo pip install mock --upgrade
+    - sudo pip install six --upgrade
     - sudo python -c "import six; print(six.__version__)" 
   # install ipfs
     - wget https://dist.ipfs.io/go-ipfs/v0.4.18/go-ipfs_v0.4.18_linux-amd64.tar.gz
