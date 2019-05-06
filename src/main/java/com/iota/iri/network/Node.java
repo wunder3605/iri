@@ -62,9 +62,9 @@ public class Node {
 
     private final DatagramPacket sendingPacket;
     private final DatagramPacket tipRequestingPacket;
-    private final DatagramPacket sendingTransaction;   // the content to send is Transaction
+    private final DatagramPacket sendingTransaction;   // the content to send is `Transaction`
     private final DatagramPacket sendingBroadcastHash; // the content to send is `broadcastFlag + Hash`
-    private final DatagramPacket sendingReqHash;       // the content to send is `Hash`
+    private final DatagramPacket sendingReqHash;       // the content to send is `requestFlag   + Hash`
 
     private final ExecutorService executor = Executors.newFixedThreadPool(5);
     private final NodeConfig configuration;
@@ -347,7 +347,7 @@ public class Node {
         }
     }
 
-    private void preProcessReceivedTransaction(byte[] receivedData, SocketAddress senderAddress, Neighbor neighbor) {
+    private Pair<Hash, Boolean> preProcessReceivedTransaction(byte[] receivedData, SocketAddress senderAddress, Neighbor neighbor) {
         TransactionViewModel receivedTransactionViewModel = null;
         Hash receivedTransactionHash = null;
         boolean cached = false;
@@ -396,7 +396,11 @@ public class Node {
             log.error(e.getMessage());
             log.error("Received an Invalid TransactionViewModel. Dropping it...");
             neighbor.incInvalidTransactions();
+
+            return null;
         }
+
+        return new ImmutablePair<>(receivedTransactionHash, cached);
     }
 
     private void preProcessReceivedBroadcastHash(byte[] receivedData, Neighbor neighbor) {
@@ -444,19 +448,21 @@ public class Node {
 
     private void printDebugInfo(boolean cached) {
 
-        long hitCount, missCount;
-        if (cached) {
-            hitCount = recentSeenBytesHitCount.incrementAndGet();
-            missCount = recentSeenBytesMissCount.get();
-        } else {
-            hitCount = recentSeenBytesHitCount.get();
-            missCount = recentSeenBytesMissCount.incrementAndGet();
-        }
-        if (((hitCount + missCount) % 50000L == 0)) {
-            log.info("RecentSeenBytes cache hit/miss ratio: " + hitCount + "/" + missCount);
-            messageQ.publish("hmr %d/%d", hitCount, missCount);
-            recentSeenBytesMissCount.set(0L);
-            recentSeenBytesHitCount.set(0L);
+        if (log.isDebugEnabled()) {
+            long hitCount, missCount;
+            if (cached) {
+                hitCount = recentSeenBytesHitCount.incrementAndGet();
+                missCount = recentSeenBytesMissCount.get();
+            } else {
+                hitCount = recentSeenBytesHitCount.get();
+                missCount = recentSeenBytesMissCount.incrementAndGet();
+            }
+            if (((hitCount + missCount) % 50000L == 0)) {
+                log.info("RecentSeenBytes cache hit/miss ratio: " + hitCount + "/" + missCount);
+                messageQ.publish("hmr %d/%d", hitCount, missCount);
+                recentSeenBytesMissCount.set(0L);
+                recentSeenBytesHitCount.set(0L);
+            }
         }
     }
 
@@ -492,7 +498,6 @@ public class Node {
     }
 
     public void preProcessReceivedData(byte[] receivedData, SocketAddress senderAddress, String uriScheme) {
-        TransactionViewModel receivedTransactionViewModel = null;
         Hash receivedTransactionHash = null;
 
         boolean addressMatch = false;
@@ -509,7 +514,12 @@ public class Node {
                     break;
                 }
 
-                preProcessReceivedTransaction(receivedData, senderAddress, neighbor);
+                Pair<Hash, Boolean> ret = preProcessReceivedTransaction(receivedData, senderAddress, neighbor);
+                if (ret == null) {
+                    break;
+                }
+                receivedTransactionHash = ret.getLeft();
+                cached = ret.getRight();
 
                 //Request bytes
 
@@ -523,9 +533,7 @@ public class Node {
                 addReceivedDataToReplyQueue(requestedHash, neighbor);
 
                 //recentSeenBytes statistics
-                if (log.isDebugEnabled()) {
-                    printDebugInfo(cached);
-                }
+                printDebugInfo(cached);
 
                 break;
             }
@@ -546,7 +554,11 @@ public class Node {
                 neighbor.incAllTransactions();
 
                 if (receivedData.length == transactionSize) {
-                    preProcessReceivedTransaction(receivedData, senderAddress, neighbor);
+                    Pair<Hash, Boolean> ret = preProcessReceivedTransaction(receivedData, senderAddress, neighbor);
+                    if (ret == null) {
+                        break;
+                    }
+                    cached = ret.getRight();
                 } else if (receivedData.length == broadcastHashSize) {
                     preProcessReceivedBroadcastHash(receivedData, neighbor);
                 } else if (receivedData.length == requestHashSize) {
@@ -554,9 +566,8 @@ public class Node {
                 }
 
                 //recentSeenBytes statistics
-                if (log.isDebugEnabled()) {
-                    printDebugInfo(cached);
-                }
+                printDebugInfo(cached);
+
                 break;
             }
         }
