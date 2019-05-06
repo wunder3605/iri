@@ -43,6 +43,18 @@ install:
       && cd go-ipfs/
       && sudo ./install.sh
       && cd ..
+ # install golang
+    - wget https://dl.google.com/go/go1.11.linux-amd64.tar.gz
+      && mkdir -p /opt/goroot
+      && tar -C /opt/goroot -xzf go1.11.linux-amd64.tar.gz
+      && echo "export GOROOT=/opt/goroot/go">> /etc/profile
+      && echo "export GOBIN=$GOROOT/bin" >> /etc/profile
+      && echo "export PATH=$PATH:$GOBIN" >> /etc/profile
+      && echo "export GOPATH=/opt/gopath" >> /etc/profile
+      && source /etc/profile
+      && mkdir -p $GOPATH/src
+      && mkdir -p $GOPATH/pkg
+      && mkdir -p $GOPATH/bin
 
 before_script:
   - ipfs init
