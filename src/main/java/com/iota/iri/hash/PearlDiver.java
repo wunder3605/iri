@@ -2,6 +2,7 @@ package com.iota.iri.hash;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.*;
 
 import static com.iota.iri.hash.PearlDiver.State.*;
 
@@ -23,6 +24,18 @@ public class PearlDiver {
 
     private volatile State state;
     private final Object syncObj = new Object();
+
+    private ThreadPoolExecutor service;
+
+    private static final PearlDiver instance = new PearlDiver();
+
+    private PearlDiver(){
+        service = new ThreadPoolExecutor(10,100,3, TimeUnit.SECONDS, new ArrayBlockingQueue<>(2));
+    }
+
+    public static PearlDiver getInstance(){
+        return instance;
+    }
 
     public void cancel() {
         synchronized (syncObj) {
@@ -56,21 +69,24 @@ public class PearlDiver {
             int available = Runtime.getRuntime().availableProcessors();
             numberOfThreads = Math.max(1, Math.floorDiv(available * 8, 10));
         }
-        List<Thread> workers = new ArrayList<>(numberOfThreads);
+        List<Future> workers = new ArrayList<>(numberOfThreads);
         while (numberOfThreads-- > 0) {
             long[] midStateCopyLow = midStateLow.clone();
             long[] midStateCopyHigh = midStateHigh.clone();
             Runnable runnable = getRunnable(numberOfThreads, transactionTrits, minWeightMagnitude, midStateCopyLow, midStateCopyHigh);
             Thread worker = new Thread(runnable);
-            workers.add(worker);
             worker.setName(this + ":worker-" + numberOfThreads);
             worker.setDaemon(true);
-            worker.start();
+            workers.add(service.submit(worker));
         }
-        for (Thread worker : workers) {
+        for (Future worker : workers) {
             try {
-                worker.join();
+                worker.get();
             } catch (InterruptedException e) {
+                synchronized (syncObj) {
+                    state = CANCELLED;
+                }
+            } catch (ExecutionException e) {
                 synchronized (syncObj) {
                     state = CANCELLED;
                 }

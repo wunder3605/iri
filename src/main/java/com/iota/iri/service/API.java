@@ -83,7 +83,7 @@ public class API {
     private Undertow server;
 
     private final Gson gson = new GsonBuilder().create();
-    private volatile PearlDiver pearlDiver = new PearlDiver();
+    private volatile PearlDiver pearlDiver;
 
     private final AtomicInteger counter = new AtomicInteger(0);
 
@@ -1275,7 +1275,7 @@ public class API {
         final List<TransactionViewModel> transactionViewModels = new LinkedList<>();
 
         Hash prevTransaction = null;
-        pearlDiver = new PearlDiver();
+        pearlDiver = PearlDiver.getInstance();
 
         byte[] transactionTrits = Converter.allocateTritsForTrytes(TRYTES_SIZE);
 

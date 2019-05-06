@@ -24,7 +24,7 @@ public class PearlDiverTest {
 
     @Before
     public void setUp() throws Exception {
-        pearlDiver = new PearlDiver();
+        pearlDiver = PearlDiver.getInstance();
         hashTrits = new byte[Curl.HASH_LENGTH];
     }
 
