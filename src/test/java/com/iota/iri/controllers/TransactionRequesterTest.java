@@ -79,7 +79,7 @@ public class TransactionRequesterTest {
         //fill tips list
         for (int i = 0; i < capacity * 2 ; i++) {
             Hash hash = TransactionViewModelTest.getRandomTransactionHash();
-            txReq.requestTransaction(hash,null, false);
+            txReq.requestTransaction(hash, null, false);
         }
         //check that limit wasn't breached
         assertEquals(capacity, txReq.numberOfTransactionsToRequest());
@@ -92,7 +92,7 @@ public class TransactionRequesterTest {
         //fill tips list
         for (int i = 0; i < capacity * 2 ; i++) {
             Hash hash = TransactionViewModelTest.getRandomTransactionHash();
-            txReq.requestTransaction(hash,null, true);
+            txReq.requestTransaction(hash, null, true);
         }
         //check that limit was surpassed
         assertEquals(capacity * 2, txReq.numberOfTransactionsToRequest());

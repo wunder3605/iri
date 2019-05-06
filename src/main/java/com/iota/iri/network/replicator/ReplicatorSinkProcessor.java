@@ -87,7 +87,11 @@ class ReplicatorSinkProcessor implements Runnable {
 
                                         byte[] bytes = message.array();
 
-                                        if (bytes.length == transactionPacketSize) {
+                                        if ((!replicatorSinkPool.node.optimizeNetworkEnabled && bytes.length == transactionPacketSize)
+                                        || (replicatorSinkPool.node.optimizeNetworkEnabled
+                                                && (bytes.length == replicatorSinkPool.node.transactionSize
+                                                    || bytes.length == replicatorSinkPool.node.broadcastHashSize
+                                                    || bytes.length == replicatorSinkPool.node.requestHashSize))){
                                             try {
                                                 CRC32 crc32 = new CRC32();
                                                 crc32.update(message.array());
