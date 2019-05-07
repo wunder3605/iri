@@ -44,7 +44,7 @@ install:
       && sudo ./install.sh
       && cd ..
  # install golang
-    - go env
+    - go version
     - wget https://dl.google.com/go/go1.11.linux-amd64.tar.gz
       && mkdir -p /opt/goroot
       && tar -C /opt/goroot -xzf go1.11.linux-amd64.tar.gz
@@ -52,7 +52,6 @@ install:
       && echo "export GOBIN=$GOROOT/bin"|sudo tee -a /etc/profile
       && echo "export GOPATH=/opt/gopath"|sudo tee -a /etc/profile
       && echo "export PATH =$PATH:$GOBIN:$GOPATH/bin"|sudo tee -a /etc/profile
-      #  sudo source /etc/profile
       && mkdir -p $GOPATH/src
       && mkdir -p $GOPATH/pkg
       && mkdir -p $GOPATH/bin
