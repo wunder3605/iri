@@ -55,7 +55,6 @@ install:
       && mkdir -p $GOPATH/src
       && mkdir -p $GOPATH/pkg
       && mkdir -p $GOPATH/bin
-
 before_script:
   - ipfs init
     && ipfs daemon &> /tmp/ipfs.log &
