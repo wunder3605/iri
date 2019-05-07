@@ -423,32 +423,30 @@ public class Node {
     }
 
     private void addNeighborFromReceivedData(SocketAddress senderAddress, String uriScheme) {
-        if (configuration.isTestnet()) {
-            int maxPeersAllowed = configuration.getMaxPeers();
-            String uriString = uriScheme + ":/" + senderAddress.toString();
-            if (Neighbor.getNumPeers() < maxPeersAllowed) {
-                log.info("Adding non-tethered neighbor: " + uriString);
-                messageQ.publish("antn %s", uriString);
-                try {
-                    final URI uri = new URI(uriString);
-                    // 3rd parameter false (not tcp), 4th parameter true (configured tethering)
-                    final Neighbor newneighbor = newNeighbor(uri, false);
-                    if (!getNeighbors().contains(newneighbor)) {
-                        getNeighbors().add(newneighbor);
-                        Neighbor.incNumPeers();
-                    }
-                } catch (URISyntaxException e) {
-                    log.error("Invalid URI string: " + uriString);
+        int maxPeersAllowed = configuration.getMaxPeers();
+        String uriString = uriScheme + ":/" + senderAddress.toString();
+        if (Neighbor.getNumPeers() < maxPeersAllowed) {
+            log.info("Adding non-tethered neighbor: " + uriString);
+            messageQ.publish("antn %s", uriString);
+            try {
+                final URI uri = new URI(uriString);
+                // 3rd parameter false (not tcp), 4th parameter true (configured tethering)
+                final Neighbor newneighbor = newNeighbor(uri, false);
+                if (!getNeighbors().contains(newneighbor)) {
+                    getNeighbors().add(newneighbor);
+                    Neighbor.incNumPeers();
                 }
-            } else {
-                if (rejectedAddresses.size() > 20) {
-                    // Avoid ever growing list in case of an attack.
-                    rejectedAddresses.clear();
-                } else if (rejectedAddresses.add(uriString)) {
-                    messageQ.publish("rntn %s %s", uriString, String.valueOf(maxPeersAllowed));
-                    log.info("Refused non-tethered neighbor: " + uriString +
-                            " (max-peers = " + String.valueOf(maxPeersAllowed) + ")");
-                }
+            } catch (URISyntaxException e) {
+                log.error("Invalid URI string: " + uriString);
+            }
+        } else {
+            if (rejectedAddresses.size() > 20) {
+                // Avoid ever growing list in case of an attack.
+                rejectedAddresses.clear();
+            } else if (rejectedAddresses.add(uriString)) {
+                messageQ.publish("rntn %s %s", uriString, String.valueOf(maxPeersAllowed));
+                log.info("Refused non-tethered neighbor: " + uriString +
+                        " (max-peers = " + String.valueOf(maxPeersAllowed) + ")");
             }
         }
     }
@@ -496,7 +494,7 @@ public class Node {
             }
         }
 
-        if (!addressMatch) {
+        if (!addressMatch && configuration.isTestnet()) {
             addNeighborFromReceivedData(senderAddress, uriScheme);
         }
     }
