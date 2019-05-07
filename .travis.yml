@@ -47,11 +47,11 @@ install:
     - wget https://dl.google.com/go/go1.11.linux-amd64.tar.gz
       && mkdir -p /opt/goroot
       && tar -C /opt/goroot -xzf go1.11.linux-amd64.tar.gz
-      && echo "export GOROOT=/opt/goroot/go">> /etc/profile
-      && echo "export GOBIN=$GOROOT/bin" >> /etc/profile
-      && echo "export GOPATH=/opt/gopath" >> /etc/profile
-      && echo "export PATH =$PATH:$GOBIN:$GOPATH/bin" >>/etc/profile
-      && source /etc/profile
+      && sudo echo "export GOROOT=/opt/goroot/go">> /etc/profile
+      && sudo echo "export GOBIN=$GOROOT/bin" >> /etc/profile
+      && sudo echo "export GOPATH=/opt/gopath" >> /etc/profile
+      && sudo echo "export PATH =$PATH:$GOBIN:$GOPATH/bin" >>/etc/profile
+      && sudo source /etc/profile
       && mkdir -p $GOPATH/src
       && mkdir -p $GOPATH/pkg
       && mkdir -p $GOPATH/bin
