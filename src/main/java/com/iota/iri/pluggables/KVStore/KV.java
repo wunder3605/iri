@@ -1,6 +1,8 @@
 package com.iota.iri.pluggables.KVStore;
 
 import java.util.*;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 public class KV {
     public String key;
@@ -29,6 +31,23 @@ public class KV {
     }
 
     public String toString() {
-        return value.toString();
+        if(value.getClass().equals(String.class)) {
+            return value.toString();
+        } else if(value.getClass().equals(ArrayList.class)) {
+            ArrayList<String> arr = new ArrayList<>();
+            ArrayList list = (ArrayList)value;
+            for(Object o : list) {
+                Gson gson = new Gson();
+                JsonObject jsonObject = gson.toJsonTree(o).getAsJsonObject();
+                String json = gson.toJson(jsonObject);
+                arr.add(json);
+            }
+            return arr.toString();
+        } else {
+            Gson gson = new Gson();
+            JsonObject jsonObject = gson.toJsonTree(value).getAsJsonObject();
+            String json = gson.toJson(jsonObject);
+            return json;
+        }
     }
 }
