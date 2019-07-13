@@ -176,7 +176,13 @@ def get_file():
 
     project = req_json[u'project']
     key = req_json[u'key']
-    resp = cache.get_file(project, key)
+    secondary = ''
+    third = ''
+    if req_json.has_key(u'secondary'):
+        secondary = req_json[u'secondary']
+    if req_json.has_key(u'third'):
+        third = req_json[u'third']
+    resp = cache.get_file(project, key, secondary, third)
 
     print("[INFO] Result is:" + str(resp[u'trytes']), file=sys.stderr)
 

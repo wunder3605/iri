@@ -64,8 +64,8 @@ class IotaCache(object):
         res = getBalance(self.uri, address, coin_type, account)
         return res
 
-    def get_file(self, project, key):
-        res = getFile(self.uri, project, key)
+    def get_file(self, project, key, secondary, third):
+        res = getFile(self.uri, project, key, secondary, third)
         return res
 
     def get_approved_txns(self, tag):

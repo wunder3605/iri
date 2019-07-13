@@ -96,11 +96,13 @@ def getBalance(url, address, coin_type, account):
     }
     return API(cmd, url)
 
-def getFile(url, project, key):
+def getFile(url, project, key, secondary, third):
     cmd = {
         "command": "getFile",
         "project": project,
-        "key": key
+        "key": key,
+        "secondary": secondary, 
+        "third": third 
     }
     return API(cmd, url)
 
