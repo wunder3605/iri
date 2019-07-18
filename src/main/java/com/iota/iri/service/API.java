@@ -21,6 +21,7 @@ import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashFactory;
 import com.iota.iri.network.Neighbor;
 import com.iota.iri.pluggables.tee.BatchTee;
+import com.iota.iri.pluggables.KVStore.*;
 import com.iota.iri.pluggables.tee.TEEFormatted;
 import com.iota.iri.pluggables.utxo.BatchTxns;
 import com.iota.iri.pluggables.utxo.NodeFormatted;
@@ -292,13 +293,7 @@ public class API {
                     return findTransactionsStatement(request);
                 }
                 case "getFile": {
-                    FindTransactionsResponse response = ((FindTransactionsResponse)findTransactionsStatement(request));
-                    String[] hashStrs = response.getHashes();
-                    final List<Hash> list = new ArrayList<Hash>();
-                    for(String s: hashStrs) {
-                        list.add(HashFactory.TRANSACTION.create(s));
-                    }
-                    return getBlockContentStatement(list);
+                    return getKVStatement(request);
                 }
                 case "getBalances": {
                     if(request.containsKey("cointype")) {
@@ -712,8 +707,6 @@ public class API {
                     BatchTee tee = new Gson().fromJson(decoded, BatchTee.class);
                     fmt.tee = tee;
                     elements.add(new Gson().toJson(fmt));
-                } else { // should be key value
-                    elements.add(dec);
                 }
             }
         }
@@ -1027,70 +1020,50 @@ public class API {
         boolean containsKey = false;
 
         final Set<Hash> bundlesTransactions = new HashSet<>();
-        final Set<Hash> keyTransactions = new HashSet<>();
         final Set<Hash> addressesTransactions = new HashSet<>();
         final Set<Hash> tagsTransactions = new HashSet<>();
         final Set<Hash> approveeTransactions = new HashSet<>();
 
-        if (request.containsKey("project")) {
-           
-            String project = (String)request.get("project");
-            
-            if(!request.containsKey("key")) {
-                throw new RuntimeException("Should have key!");
+        if (request.containsKey("bundles")) {
+            final HashSet<String> bundles = getParameterAsSet(request,"bundles",HASH_SIZE);
+            for (final String bundle : bundles) {
+                bundlesTransactions.addAll(BundleViewModel.load(instance.tangle, HashFactory.BUNDLE.create(bundle)).getHashes());
             }
-
-            String key = (String)request.get("key");
-
-            log.debug("Query project: {}, key {}", project, key);
-            String trytes = Converter.asciiToTrytes(project + "-" + key);
-            keyTransactions.addAll(KeyViewModel.load(instance.tangle, HashFactory.TAG.create(trytes)).getHashes());
-            foundTransactions.addAll(keyTransactions);
-
+            foundTransactions.addAll(bundlesTransactions);
             containsKey = true;
-        } else {
-            if (request.containsKey("bundles")) {
-                final HashSet<String> bundles = getParameterAsSet(request,"bundles",HASH_SIZE);
-                for (final String bundle : bundles) {
-                    bundlesTransactions.addAll(BundleViewModel.load(instance.tangle, HashFactory.BUNDLE.create(bundle)).getHashes());
-                }
-                foundTransactions.addAll(bundlesTransactions);
-                containsKey = true;
-            }
+        }
 
-            if (request.containsKey("addresses")) {
-                final HashSet<String> addresses = getParameterAsSet(request,"addresses",HASH_SIZE);
-                for (final String address : addresses) {
-                    addressesTransactions.addAll(AddressViewModel.load(instance.tangle, HashFactory.ADDRESS.create(address)).getHashes());
-                }
-                foundTransactions.addAll(addressesTransactions);
-                containsKey = true;
+        if (request.containsKey("addresses")) {
+            final HashSet<String> addresses = getParameterAsSet(request,"addresses",HASH_SIZE);
+            for (final String address : addresses) {
+                addressesTransactions.addAll(AddressViewModel.load(instance.tangle, HashFactory.ADDRESS.create(address)).getHashes());
             }
+            foundTransactions.addAll(addressesTransactions);
+            containsKey = true;
+        }
 
-            
-            if (request.containsKey("tags")) {
-                final HashSet<String> tags = getParameterAsSet(request,"tags",0);
+        if (request.containsKey("tags")) {
+            final HashSet<String> tags = getParameterAsSet(request,"tags",0);
+            for (String tag : tags) {
+                tag = padTag(tag);
+                tagsTransactions.addAll(TagViewModel.load(instance.tangle, HashFactory.TAG.create(tag)).getHashes());
+            }
+            if (tagsTransactions.isEmpty()) {
                 for (String tag : tags) {
                     tag = padTag(tag);
-                    tagsTransactions.addAll(TagViewModel.load(instance.tangle, HashFactory.TAG.create(tag)).getHashes());
+                    tagsTransactions.addAll(TagViewModel.loadObsolete(instance.tangle, HashFactory.OBSOLETETAG.create(tag)).getHashes());
                 }
-                if (tagsTransactions.isEmpty()) {
-                    for (String tag : tags) {
-                        tag = padTag(tag);
-                        tagsTransactions.addAll(TagViewModel.loadObsolete(instance.tangle, HashFactory.OBSOLETETAG.create(tag)).getHashes());
-                    }
-                }
-                foundTransactions.addAll(tagsTransactions);
-                containsKey = true;
             }
-            if (request.containsKey("approvees")) {
-                final HashSet<String> approvees = getParameterAsSet(request,"approvees",HASH_SIZE);
-                for (final String approvee : approvees) {
-                    approveeTransactions.addAll(TransactionViewModel.fromHash(instance.tangle, HashFactory.TRANSACTION.create(approvee)).getApprovers(instance.tangle).getHashes());
-                }
-                foundTransactions.addAll(approveeTransactions);
-                containsKey = true;
+            foundTransactions.addAll(tagsTransactions);
+            containsKey = true;
+        }
+        if (request.containsKey("approvees")) {
+            final HashSet<String> approvees = getParameterAsSet(request,"approvees",HASH_SIZE);
+            for (final String approvee : approvees) {
+                approveeTransactions.addAll(TransactionViewModel.fromHash(instance.tangle, HashFactory.TRANSACTION.create(approvee)).getApprovers(instance.tangle).getHashes());
             }
+            foundTransactions.addAll(approveeTransactions);
+            containsKey = true;
         }
 
         if (!containsKey) {
@@ -1098,9 +1071,6 @@ public class API {
         }
 
         //Using multiple of these input fields returns the intersection of the values.
-        if (request.containsKey("project")) {
-            foundTransactions.retainAll(keyTransactions);
-        }
         if (request.containsKey("bundles")) {
             foundTransactions.retainAll(bundlesTransactions);
         }
@@ -1122,6 +1092,62 @@ public class API {
                 .collect(Collectors.toCollection(LinkedList::new));
 
         return FindTransactionsResponse.create(elements);
+    }
+
+    private synchronized AbstractResponse getKVStatement(final Map<String, Object> request) throws Exception {
+        LocalInMemoryGraphProvider provider = (LocalInMemoryGraphProvider)instance.tangle.getPersistenceProvider("LOCAL_GRAPH");
+        List<Hash> order = provider.totalTopOrder();
+
+        final Set<Hash> keyTransactions = new HashSet<>();
+
+        if (request.containsKey("project")) {
+            String project = (String) request.get("project");
+            if (!request.containsKey("key")) {
+                throw new RuntimeException("Should have key!");
+            }
+            String key = (String) request.get("key");
+
+
+            String trytes = Converter.asciiToTrytes(project + "-" + key);
+            keyTransactions.addAll(KeyViewModel.load(instance.tangle, HashFactory.TAG.create(trytes)).getHashes());
+
+            String secondary = "";
+            String third = "";
+            if(request.containsKey("secondary")) {
+                secondary = (String)request.get("secondary");
+            }
+            if(request.containsKey("third")) {
+                third = (String)request.get("third");
+            }
+
+            KVFilter filter = new KVFilter();
+            filter.setCriteria(project, key, secondary, third, order);
+            log.debug("Query project: {}, key {} secondary {} third {}", project, key, secondary, third);
+            String info = "";
+            for (final Hash hash : keyTransactions) {
+                final TransactionViewModel transactionViewModel = TransactionViewModel.fromHash(instance.tangle, hash);
+                if (transactionViewModel != null) {
+                    byte[] sigTrits = transactionViewModel.getSignature();
+                    String sigTrytes = Converter.trytes(sigTrits);
+                    String txnInfo = Converter.trytesToAscii(sigTrytes);
+                    String dec = java.net.URLDecoder.decode(StringUtils.trim(txnInfo), StandardCharsets.UTF_8.name()).replace("\"[", "[").replace("]\"", "]").replace("\\", "");
+                    BatchKV kv = new Gson().fromJson(dec, BatchKV.class);
+                    for(KV k : kv.txn_content) {
+                        filter.addKV(k, hash);
+                    }
+                }
+            }
+
+            List<String> ret = filter.getResult();
+
+            if (ret.size() > maxGetTrytes){
+                return ErrorResponse.create(overMaxErrorMessage);
+            }
+            return GetTrytesResponse.create(ret);
+
+        } else {
+            throw new RuntimeException("Should have project name!");
+        }
     }
 
     private String padTag(String tag) throws ValidationException {

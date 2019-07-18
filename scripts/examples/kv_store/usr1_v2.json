@@ -1,0 +1,13 @@
+{
+	"project":"diamond",
+	"key":"022IWzw70fQLVF1FDsw70riuw70IWzw6",
+	"secondary":"vipinfo",
+	"value": {
+		"vipID" : "1234567890",
+		"developedVIP" : 25,
+		"vipType" : "ADVANCED",
+		"score" : 110
+	},
+	"tag":"KV"
+}
+
