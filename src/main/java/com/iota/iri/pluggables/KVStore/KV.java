@@ -42,7 +42,7 @@ public class KV {
                 String json = gson.toJson(jsonObject);
                 arr.add(json);
             }
-            return arr.toString();
+            return "\""+getCombinedKey()+"\" : "+arr.toString();
         } else {
             Gson gson = new Gson();
             JsonObject jsonObject = gson.toJsonTree(value).getAsJsonObject();
