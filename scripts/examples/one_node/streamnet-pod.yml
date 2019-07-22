@@ -1,0 +1,28 @@
+apiVersion: "v1"
+kind: Pod
+metadata:
+  name: streamnet 
+  labels:
+    name: streamnet 
+    app: dev 
+spec:
+  containers:
+   - name: streamnet 
+     image: stplaydog/streamnet:dev 
+     command: ["/entrypoint.sh"]
+     ports:
+       - containerPort: 14700 
+         name: streamnet 
+         protocol: TCP
+   - name: streamnet-cli 
+     image: stplaydog/streamnet-cli:dev
+     command: ["/docker-entrypoint.sh"]
+     env:
+       - name: "ENABLE_BATCHING"
+         value: "false"
+       - name: "HOST_IP"
+         value: "localhost"
+     ports:
+       - containerPort: 5000
+         name: streamnet-cli 
+         protocol: TCP            

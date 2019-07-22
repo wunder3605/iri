@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: streamnet 
+  labels:
+    name: streamnet
+    app: dev
+spec:
+  selector:
+    name: streamnet 
+  type: NodePort
+  ports:
+   - port: 5000 
+     name: streamnet 
+     targetPort: 5000 
+     protocol: TCP
