@@ -12,6 +12,4 @@ then
   sed -i "2s/localhost/${hostip}/g" conf
 fi
 
-#python modify_conf_file.py modify_iota_cli_conf
-nohup  python chronic_txn_sync.py > synclog 2>&1 &
 python app.py
