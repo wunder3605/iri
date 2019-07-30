@@ -24,6 +24,7 @@ which is released whenever there is a new update here: [Github Releases](https:/
 ### 1.1 Compiling yourself
 
 Make sure to have Maven and Java 8 installed on your computer.
+Or, install gradle by yourself
 
 #### 1.1.1 To compile & package
 ```bash
@@ -35,7 +36,16 @@ mvn package
 
 This will create a `target` directory in which you will find the executable jar file that you can use.
 
-#### 1.1.2 To compiple docker
+#### 1.1.2 To compiple with gradle 
+
+```bash
+./gradlew clean test build
+```
+
+The reason why you should use gradle is that its compiling script is much more succint and it's better compatible with IntelliJ.
+Please search how to integrate gradle project with IntelliJ.
+
+#### 1.1.3 To compiple docker
 
 ```bash
 docker build -t <name>:<tag> .
