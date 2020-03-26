@@ -26,10 +26,14 @@ which is released whenever there is a new update here: [Github Releases](https:/
 Make sure to have Maven and Java 8 installed on your computer.
 Or, install gradle by yourself
 
+We only support python 2.7. Python environment need to have: gunicorn, flask, pyota, cryptography>=2.8, ecdsa installed with pip.
+
+Curl also need to be installed.
+
 #### 1.1.1 To compile & package
 ```bash
-git clone https://github.com/trias-lab/iri
-cd iri
+git clone https://github.com/StreamUnion/StreamNet.git 
+cd StreamNet 
 mvn clean compile
 mvn package
 ```
