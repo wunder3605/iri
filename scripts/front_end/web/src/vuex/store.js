@@ -7,9 +7,11 @@ Vue.use(Vuex);
 
 // 应用初始状态
 const state = {
-    count: 10
+    count: 10,
+    pathMap: {},
+    rootMap: {},
+    userInfo: {}
 };
-
 // 定义所需的 mutations
 const mutations = {
     INCREMENT(state) {
@@ -17,6 +19,18 @@ const mutations = {
     },
     DECREMENT(state) {
         state.count--
+    },
+    setUserInfo(state, userInfo) {
+        let resourceList = userInfo.resourceList;
+        state.rootMap = {};
+        state.pathMap = {};
+        state.pathMap["/addition"] = 1;
+        state.pathMap["/"] = 1;
+        for (let i in resourceList) {
+            state.rootMap[resourceList[i]["rootName"]] = 1;
+            state.pathMap[resourceList[i]["path"]] = 1;
+        }
+        state.userInfo = userInfo.userInfo;
     }
 };
 

@@ -2,18 +2,15 @@ package com.iota.iri.storage;
 
 import com.iota.iri.conf.BaseIotaConfig;
 import com.iota.iri.model.Hash;
-import com.iota.iri.storage.localinmemorygraph.LocalInMemoryGraphProvider;
 import com.iota.iri.model.StateDiff;
 import com.iota.iri.model.persistables.*;
+import com.iota.iri.storage.localinmemorygraph.LocalInMemoryGraphProvider;
+import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import com.iota.iri.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
 
 
 /**
@@ -32,6 +29,7 @@ public class Tangle {
                 put("bundle", Bundle.class);
                 put("obsoleteTag", ObsoleteTag.class);
                 put("tag", Tag.class);
+                put("keyvalue", KeyValue.class);
             }};
 
     public static final Map.Entry<String, Class<? extends Persistable>> METADATA_COLUMN_FAMILY =
@@ -360,6 +358,23 @@ public class Tangle {
     public void storeAncestors(Stack<Hash> ancestors) {
         for(PersistenceProvider provider : this.persistenceProviders){
             provider.storeAncestors(ancestors);
+        }
+    }
+
+    public List<Hash> getTotalOrder(){
+        for(PersistenceProvider provider : this.persistenceProviders){
+            if (provider instanceof RocksDBPersistenceProvider) {
+                return ((RocksDBPersistenceProvider) provider).getTotalOrder();
+            }
+        }
+        return null;
+    }
+
+    public void storeTotalOrder(List<Hash> totalOrders){
+        for(PersistenceProvider provider : this.persistenceProviders){
+            if (provider instanceof RocksDBPersistenceProvider) {
+                ((RocksDBPersistenceProvider) provider).storeTotalOrder(totalOrders);
+            }
         }
     }
 }

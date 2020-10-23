@@ -12,6 +12,7 @@ from collections import deque
 import StringIO
 import gzip
 from iota import TryteString
+from key_manager.signmessage import sign_input_message
 
 cf = ConfigParser.ConfigParser()
 cf.read("conf")
@@ -20,6 +21,7 @@ iota_seed = cf.get("iota", "seed")
 enable_ipfs = cf.getboolean("iota", "enableIpfs")
 enable_compression = cf.getboolean("iota", "enableCompression")
 enable_batching = cf.getboolean("iota", "enableBatching")
+enable_crypto = cf.getboolean("iota", "enableCrypto")
 listen_port = cf.get("iota", "listenPort")
 listen_address = cf.get("iota", "listenAddress")
 cache = IotaCache(iota_addr, iota_seed)
@@ -37,6 +39,15 @@ lock = threading.Lock()
 if (enable_ipfs == True and enable_compression == True) or (enable_batching == False and enable_compression == True):
     print("Error configure!", file=sys.stderr)
     sys.exit(-1)
+
+def sign_message(data,address, base58_priv_key):
+    if enable_crypto is True:
+        message = json.dumps(data, sort_keys=True)
+        signature = sign_input_message(address, message.replace(' ', ''), base58_priv_key)
+        data['sign'] = signature
+        return json.dumps(data, sort_keys=True)
+    else:
+        return json.dumps(data, sort_keys=True)
 
 def compress_str(data):
     if enable_compression == True:
@@ -95,6 +106,8 @@ def get_cache():
     if enable_batching is False:
         return
 
+    address = '14dD6ygPi5WXdwwBTt1FBZK3aD8uDem1FY'
+    base58_priv_key = 'L41XHGJA5QX43QRG3FEwPbqD5BYvy6WxUxqAMM9oQdHJ5FcRHcGk'
     global cache_lock
     with cache_lock:
         nums = min(len(txn_cache), BATCH_SIZE)
@@ -112,7 +125,7 @@ def get_cache():
                 tr_list.append(tx)
                 num_tr += 1
             elif req_json[u'tag'] == 'TX':
-                tx_list.append(tx)
+                tx_list.append(sign_message(req_json, address, base58_priv_key))
                 num_tx += 1
 
         tr_txs = json.dumps(tr_list)
@@ -148,17 +161,56 @@ def get_balance():
     print("Balance of '%s' is [%s]" % (account, balance), file=sys.stderr)
     return balance
 
+@app.route('/get_file', methods=['POST'])
+def get_file():
+    req_json = request.get_json()
+
+    if req_json is None:
+        return 'error'
+    if not req_json.has_key(u'project'):
+        print("[ERROR] Project is needed.", file=sys.stderr)
+        return 'error'
+    if not req_json.has_key(u'key'):
+        print("[ERROR] Key is needed.", file=sys.stderr)
+        return 'error'
+
+    project = req_json[u'project']
+    key = req_json[u'key']
+    secondary = ''
+    third = ''
+    if req_json.has_key(u'secondary'):
+        secondary = req_json[u'secondary']
+    if req_json.has_key(u'third'):
+        third = req_json[u'third']
+    resp = cache.get_file(project, key, secondary, third)
+
+    print("[INFO] Result is:" + str(resp[u'trytes']), file=sys.stderr)
+
+    ret_list = [x.encode('utf-8') for x in resp[u'trytes']]
+    return str(ret_list)
+
 @app.route('/put_file', methods=['POST'])
 def put_file():
+
+    address = '14dD6ygPi5WXdwwBTt1FBZK3aD8uDem1FY'
+    base58_priv_key = 'L41XHGJA5QX43QRG3FEwPbqD5BYvy6WxUxqAMM9oQdHJ5FcRHcGk'
+
     req_json = request.get_json()
 
     if req_json is None:
         return 'error'
 
-    if not req_json.has_key(u'tag'):
-        send(json.dumps(req_json, sort_keys=True))
+    # check if KV
+    if req_json[u'tag'] == "KV":
+        kv_list = []
+        kv_list.append(req_json)
+        req_json = json.dumps(kv_list)
+        send(req_json, tag="KV")
     else:
-        send(json.dumps(req_json, sort_keys=True), tag=req_json[u'tag'])
+        if not req_json.has_key(u'tag'):
+            send(sign_message(req_json, address, base58_priv_key))
+        else:
+            send(sign_message(req_json, address, base58_priv_key), tag=req_json[u'tag'])
 
     return 'ok'
 

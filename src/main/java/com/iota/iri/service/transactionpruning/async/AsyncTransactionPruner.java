@@ -305,27 +305,27 @@ public class AsyncTransactionPruner implements TransactionPruner {
      */
     private void saveStateNow() throws TransactionPruningException {
         try {
-            AtomicInteger jobsPersisted = new AtomicInteger(0);
+            //AtomicInteger jobsPersisted = new AtomicInteger(0);
 
-            Files.write(
-                Paths.get(getStateFile().getAbsolutePath()),
-                () -> jobQueues.values().stream()
-                      .<TransactionPrunerJob>flatMap(JobQueue::stream)
-                      .<CharSequence>map(jobEntry -> {
-                          jobsPersisted.incrementAndGet();
+            //Files.write(
+            //    Paths.get(getStateFile().getAbsolutePath()),
+            //    () -> jobQueues.values().stream()
+            //          .<TransactionPrunerJob>flatMap(JobQueue::stream)
+            //          .<CharSequence>map(jobEntry -> {
+            //              jobsPersisted.incrementAndGet();
 
-                          return this.serializeJobEntry(jobEntry);
-                      })
-                      .iterator()
-            );
+            //              return this.serializeJobEntry(jobEntry);
+            //          })
+            //          .iterator()
+            //);
 
-            if (jobsPersisted.get() == 0) {
-                try {
-                    Files.deleteIfExists(Paths.get(getStateFile().getAbsolutePath()));
-                } catch (IOException e) {
-                    throw new TransactionPruningException("failed to remove the state file", e);
-                }
-            }
+            //if (jobsPersisted.get() == 0) {
+            //    try {
+            //        Files.deleteIfExists(Paths.get(getStateFile().getAbsolutePath()));
+            //    } catch (IOException e) {
+            //        throw new TransactionPruningException("failed to remove the state file", e);
+            //    }
+            //}
         } catch(Exception e) {
             throw new TransactionPruningException("failed to write the state file", e);
         }

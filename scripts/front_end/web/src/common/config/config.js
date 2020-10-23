@@ -36,8 +36,46 @@ export default {
             GET: "GET",
             POST: "POST"
         };
-        Vue.prototype.ConfigUrls = {
-            OPS: "http://140.143.187.24"
-        }
-    }
+        Vue.prototype.Servers = {
+            deployType: [
+                {
+                    name: "3_clique",
+                    value: "3_clique"
+                },
+                {
+                    name: "4_circle",
+                    value: "4_circle"
+                },
+                {
+                    name: "4_clique",
+                    value: "4_clique"
+                },
+                {
+                    name: "7_bridge",
+                    value: "7_bridge"
+                },
+                {
+                    name: "7_circle",
+                    value: "7_circle"
+                },
+                {
+                    name: "7_clique",
+                    value: "7_clique"
+                },
+                {
+                    name: "7_star",
+                    value: "7_star"
+                },
+                {
+                    name: "all_topology",
+                    value: "all_topology",
+                    experiment: true
+                }
+            ],
+            serverList: {
+                deploymentServer: "http://13.229.201.108:8080",
+                opsServer: "http://13.229.201.108:5001"
+            }
+        };
+    },
 }

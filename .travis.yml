@@ -1,8 +1,8 @@
 language: java
 jdk:
-  - oraclejdk8
+    #- oraclejdk8
   - openjdk8
-  - oraclejdk9
+  #- oraclejdk9
 
 cache:
   apt: true
@@ -15,10 +15,7 @@ addons:
   apt:
     packages:
     - jq
-
-matrix:
-  allow_failures:
-    - jdk: oraclejdk9
+    - nginx
 
 install:
   # install python env
@@ -30,23 +27,29 @@ install:
     - sudo apt-get install python-pip
     - sudo pip install ipfsapi
     - sudo pip install flask
-    - sudo pip install pyOpenSSL
+    - sudo pip install -U pyOpenSSL
     - sudo pip install pyota
     - sudo pip install docker
     - sudo pip install mock
     - sudo pip install cryptography==2.5
     - sudo pip install sh
     - sudo pip install six --upgrade
-  # install ipfs
-    - wget https://dist.ipfs.io/go-ipfs/v0.4.18/go-ipfs_v0.4.18_linux-amd64.tar.gz
-      && tar xf go-ipfs_v0.4.18_linux-amd64.tar.gz
-      && cd go-ipfs/
-      && sudo ./install.sh
-      && cd ..
+    - sudo pip install ecdsa
+  # update go version
+    - gimme 1.11.5
+    - source ~/.gimme/envs/go1.11.5.env
+  # install jmeter
+    - wget -c https://github.com/triasteam/utils/raw/master/software/apache-jmeter-5.1.1.zip
+      && mv apache-jmeter-5.1.1.zip /opt
+      && cd /opt
+      && unzip apache-jmeter-5.1.1.zip
+      && export JMETER_HOME=/opt/apache-jmeter-5.1.1
+      && export CLASSPATH=$CLASSPATH:$JMETER_HOME/lib
+      && export PATH=$PATH:$JMETER_HOME/bin
+      && cd -
 
 before_script:
-  - ipfs init
-    && ipfs daemon &> /tmp/ipfs.log &
+  -
 
 script:
   #run tests and integration tests
@@ -65,12 +68,13 @@ script:
   - JACOCO_V=$(mvn help:evaluate -Dexpression=jacoco.version | grep -E '^[0-9.]+')
   - export _JAVA_OPTIONS="$_JAVA_OPTIONS -javaagent:$HOME/.m2/repository/org/jacoco/org.jacoco.agent/$JACOCO_V/org.jacoco.agent-$JACOCO_V-runtime.jar=destfile=$PWD/target/jacoco.exec,output=file,append=true,dumponexit=true"
   - echo $_JAVA_OPTIONS
-  - git clone https://github.com/triasteam/iri-regression-tests.git
+  - git clone https://github.com/StreamUnion/iri-regression-tests.git
   - cd iri-regression-tests
   #- git checkout -f master
   - mkdir iri
   - cp -rf ../target iri/target
   - cp -rf ../scripts iri/scripts
+  - cp /opt/apache-jmeter-5.1.1/lib /opt/apache-jmeter-5.1.1/bin iri/scripts -r
   - bash run_all_stable_tests.sh $VERSION
   - cd ..
   #jacoco append to report
@@ -85,7 +89,6 @@ after_success:
 
 after_failure:
   - cat /tmp/app.log
-  - cat /tmp/ipfs.log
   - cat ../../iri-regression-tests/iri/node1/iri.log
 
 deploy:

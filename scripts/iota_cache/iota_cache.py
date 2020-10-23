@@ -4,7 +4,7 @@ sys.path.append("..")
 import time
 from iota import Iota, Address, ProposedTransaction, Tag, Transaction, TryteString, TransactionTrytes, ProposedBundle, Nonce, BundleHash,TransactionHash, Fragment
 from six import binary_type, moves as compat, text_type
-from iota_api.api import attachToTangle, storeMessage, getBalance, addNeighbors, getBlockContent, getDAG, getUTXO, getTotalOrder
+from iota_api.api import attachToTangle, storeMessage, getBalance, addNeighbors, getBlockContent, getDAG, getUTXO, getTotalOrder, getFile
 
 class IotaCache(object):
 
@@ -54,13 +54,18 @@ class IotaCache(object):
         return res
 
     def cache_txn_in_tangle_message(self, data, tag):
-        address = "JVSVAFSXWHUIZPFDLORNDMASGNXWFGZFMXGLCJQGFWFEZWWOA9KYSPHCLZHFBCOHMNCCBAGNACPIGHVYX"
+        #address = "JVSVAFSXWHUIZPFDLORNDMASGNXWFGZFMXGLCJQGFWFEZWWOA9KYSPHCLZHFBCOHMNCCBAGNACPIGHVYX"
+        address = "14dD6ygPi5WXdwwBTt1FBZK3aD8uDem1FY"
         res = storeMessage(self.uri, address, data, tag)
         return res
 
     def get_balance(self, coin_type, account):
         address = "JVSVAFSXWHUIZPFDLORNDMASGNXWFGZFMXGLCJQGFWFEZWWOA9KYSPHCLZHFBCOHMNCCBAGNACPIGHVYX"
         res = getBalance(self.uri, address, coin_type, account)
+        return res
+
+    def get_file(self, project, key, secondary, third):
+        res = getFile(self.uri, project, key, secondary, third)
         return res
 
     def get_approved_txns(self, tag):

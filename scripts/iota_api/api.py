@@ -96,6 +96,16 @@ def getBalance(url, address, coin_type, account):
     }
     return API(cmd, url)
 
+def getFile(url, project, key, secondary, third):
+    cmd = {
+        "command": "getFile",
+        "project": project,
+        "key": key,
+        "secondary": secondary, 
+        "third": third 
+    }
+    return API(cmd, url)
+
 def addNeighbors(url,uris):
     cmd = {
         "command": "addNeighbors",
@@ -123,8 +133,6 @@ def getUTXO(url,dag_type):
         "type":dag_type
     }
     return API(cmd,url)
-
-
 
 def getTotalOrder(url):
     cmd = {
